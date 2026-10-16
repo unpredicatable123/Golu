@@ -1,0 +1,21 @@
+# Generated renders (PNG frames, .blend builds, logs, QA images)
+renders/
+
+# Python
+__pycache__/
+*.pyc
+*.blend1
+
+# Web build output and dependencies
+web/node_modules/
+web/.svelte-kit/
+web/build/
+web/test-results/
+web/playwright-report/
+
+# Generated web assets (produced by scripts/encode_frames.sh)
+web/static/frames/
+web/static/frames-mobile/
+web/static/doors/
+web/static/props/
+web/src/lib/frames.json
