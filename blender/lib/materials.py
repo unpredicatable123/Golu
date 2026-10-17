@@ -284,18 +284,22 @@ def zari_group() -> bpy.types.NodeTree:
 def face_paint_group() -> bpy.types.NodeTree:
     """NG_FacePaint: golu-style painted face in head space (DECISIONS D25).
 
-    Per-object properties (Attribute OBJECT): head_center, head_radius, face_yaw, eye_x, eye_z, eye_w, eye_h,
-    has_brow, has_lips, mark_type, mark_z, iris_scale.
+    Per-object vector properties (Attribute OBJECT; packed because EEVEE allows only 8 uniform attributes per
+    material): face_a = head_center; face_b = (head_radius, face_yaw, mark_type);
+    face_c = (eye_x, eye_z, eye_w); face_d = (eye_h, iris_scale, mark_z); face_e = (has_brow, has_lips, moustache).
     """
     g, b, gi, go = _group_tree(
         "NG_FacePaint",
         [("Object", "NodeSocketVector", None), ("Base", "NodeSocketColor", (0.6, 0.4, 0.3, 1.0))],
         [("Color", "NodeSocketColor"), ("Mask", "NodeSocketFloat")])
     P = pal()
-    oa = lambda name: b.attr(name, "OBJECT")
-    hc = oa("head_center").outputs["Vector"]
-    hr = oa("head_radius").outputs["Fac"]
-    yaw = oa("face_yaw").outputs["Fac"]
+    def unpack(name):
+        return b.sep(b.attr(name, "OBJECT").outputs["Vector"])
+    hc = b.attr("face_a", "OBJECT").outputs["Vector"]
+    hr, yaw, mark_t = unpack("face_b")
+    ex, ez, ew = unpack("face_c")
+    eh, iris_k, mark_zz = unpack("face_d")
+    has_brow, has_lips, has_must = unpack("face_e")
     rel = b.vec("SUBTRACT", gi.outputs["Object"], hc)
     rel = b.vec("DIVIDE", rel, b.comb(hr, hr, hr))
     rot = b.node("ShaderNodeVectorRotate", rotation_type="Z_AXIS", invert=True)
@@ -305,8 +309,6 @@ def face_paint_group() -> bpy.types.NodeTree:
     ax = b.absv(x)
     front = b.map_range(y, -0.15, -0.35, 0.0, 1.0)
 
-    ex, ez = oa("eye_x").outputs["Fac"], oa("eye_z").outputs["Fac"]
-    ew, eh = oa("eye_w").outputs["Fac"], oa("eye_h").outputs["Fac"]
     # almond lens: two circles of radius Rr offset vertically by d (Rr = (w²+h²)/2h, d = Rr - h)
     rr = b.div(b.add(b.mul(ew, ew), b.mul(eh, eh)), b.mul(eh, 2.0))
     dd = b.sub(rr, eh)
@@ -323,7 +325,7 @@ def face_paint_group() -> bpy.types.NodeTree:
     wing = b.mul(b.mul(b.smooth_mask(b.sub(wing_line, b.mul(b.map_range(dx, ew, b.mul(ew, 1.55), 0.022, 0.0), 1.0))),
                        b.gt(dx, b.mul(ew, 0.9))), b.lt(dx, b.mul(ew, 1.55)))
     white = b.smooth_mask(lens)
-    iris_r = b.mul(eh, b.mul(oa("iris_scale").outputs["Fac"], 1.0))
+    iris_r = b.mul(eh, iris_k)
     iris = b.mul(b.smooth_mask(b.sub(b.hypot(dx, b.add(dz, b.mul(eh, 0.1))), iris_r)), white)
     glint = b.mul(b.smooth_mask(b.sub(b.hypot(b.add(dx, b.mul(iris_r, 0.35)), b.sub(dz, b.mul(iris_r, 0.35))),
                                        b.mul(iris_r, 0.22)), 0.004), iris)
@@ -332,18 +334,23 @@ def face_paint_group() -> bpy.types.NodeTree:
     zb = b.sub(b.add(ez, b.mul(eh, 2.6)), b.mul(b.mul(bx, bx), b.mul(eh, 1.4)))
     brow_th = b.mul(b.mul(eh, 0.32), b.mx(b.sub(1.0, b.mul(bx, bx)), 0.0))
     brow = b.mul(b.smooth_mask(b.sub(b.absv(b.sub(z, zb)), brow_th)), b.lt(b.absv(bx), 1.0))
-    brow = b.mul(brow, oa("has_brow").outputs["Fac"])
+    brow = b.mul(brow, has_brow)
     # lips
     lw, lh, lz = 0.12, 0.048, -0.44
     lrr = (lw * lw + lh * lh) / (2 * lh)
     ld = lrr - lh
     l1 = b.sub(b.hypot(x, b.sub(b.sub(z, lz), ld)), lrr)
     l2 = b.sub(b.hypot(x, b.add(b.sub(z, lz), ld)), lrr)
-    lips = b.mul(b.smooth_mask(b.mx(l1, l2)), oa("has_lips").outputs["Fac"])
+    lips = b.mul(b.smooth_mask(b.mx(l1, l2)), has_lips)
     lipline = b.mul(b.smooth_mask(b.sub(b.absv(b.sub(z, lz)), 0.006), 0.003), lips)
+    # moustache: curved band above the lips, curling up at the ends
+    mz = b.add(lz + 0.085, b.mul(b.mul(x, x), 2.2))
+    must = b.mul(b.mul(b.smooth_mask(b.sub(b.absv(b.sub(z, mz)), b.sub(0.034, b.mul(ax, 0.09)))),
+                       b.lt(ax, 0.23)), has_must)
+    lips = b.mul(lips, b.sub(1.0, must))
     # forehead marks
-    mt = oa("mark_type").outputs["Fac"]
-    mz = oa("mark_z").outputs["Fac"]
+    mt = mark_t
+    mz = mark_zz
     fz = b.sub(z, mz)
     m_dot = b.mul(b.cmp(mt, 1.0, 0.5), b.smooth_mask(b.sub(b.hypot(x, fz), 0.05)))
     ring = b.hypot(x, fz)
@@ -373,12 +380,14 @@ def face_paint_group() -> bpy.types.NodeTree:
     col = b.mix_rgb(b.mul(iris, front), col, black_c)
     col = b.mix_rgb(b.mul(glint, front), col, white_c)
     col = b.mix_rgb(b.mul(brow, front), col, black_c)
+    col = b.mix_rgb(b.mul(must, front), col, black_c)
     col = b.mix_rgb(b.mul(lips, front), col, lip_c)
     col = b.mix_rgb(b.mul(lipline, front), col, rgba((0.25, 0.02, 0.03)))
     col = b.mix_rgb(b.mul(b.mx(namam_w, vib_w), front), col, vib_c)
     col = b.mix_rgb(b.mul(namam_r, front), col, red_c)
     col = b.mix_rgb(b.mul(b.mx(b.mx(m_dot, vib_r), tv), front), col, kum_c)
-    mask = b.mul(front, b.mx(b.mx(b.mx(kajal, white), b.mx(brow, lips)), b.mx(b.mx(namam_w, vib_w), b.mx(m_dot, tv))))
+    mask = b.mul(front, b.mx(b.mx(b.mx(kajal, white), b.mx(b.mx(brow, must), lips)),
+                             b.mx(b.mx(namam_w, vib_w), b.mx(m_dot, tv))))
     b.l.new(col, go.inputs["Color"])
     b.l.new(mask, go.inputs["Mask"])
     return g
@@ -413,6 +422,16 @@ def clay_gloss() -> bpy.types.Material:
     vor = b.voronoi(tc.outputs["Object"], 160.0, feature="DISTANCE_TO_EDGE")
     edge = b.map_range(vor.outputs["Distance"], 0.0, 0.08, 0.55, 1.0)
     base = b.mix_rgb(is_scale, base, b.mix_rgb(1.0, base, b.comb(edge, edge, edge), blend="MULTIPLY"))
+    # peacock eye-feather ocellus (kind 8) from the feather's garment_uv (u across, v along)
+    is_eye = b.cmp(kind, 8.0, 0.5)
+    fu, fv, _ = b.sep(guv)
+    od = b.hypot(b.sub(fu, 0.5), b.mul(b.sub(fv, 0.84), 1.7))
+    eye_col = b.ramp(od, [(0.0, (0.01, 0.02, 0.10, 1)), (0.07, (0.02, 0.08, 0.5, 1)), (0.115, (0.0, 0.32, 0.33, 1)),
+                          (0.16, (0.55, 0.33, 0.04, 1)), (0.215, (0.07, 0.26, 0.04, 1)),
+                          (0.32, (0.16, 0.2, 0.04, 1))])
+    barbs = b.wave(b.comb(b.mul(b.sub(fu, 0.5), 30.0), fv, 0.0), 1.0, detail=0.0, direction="X")
+    eye_col = b.mix_rgb(b.mul(b.mul(barbs.outputs["Fac"], 0.35), b.gt(od, 0.2)), eye_col, (0.02, 0.05, 0.01, 1))
+    base = b.mix_rgb(is_eye, base, eye_col)
     # zari (garment kind 1)
     is_garment = b.cmp(kind, 1.0, 0.5)
     z = b.group(zari_group(), UV=guv, Zari=zari)
@@ -420,7 +439,7 @@ def clay_gloss() -> bpy.types.Material:
     gold = pal().material("gold")
     gold_pat = b.mix_rgb(b.mul(z.outputs["Pattern"], 0.35), rgba(gold), rgba(lift(gold, 0.6)))
     base = b.mix_rgb(zmask, base, gold_pat)
-    metal = b.mx(metal, zmask)
+    metal = b.mx(metal, b.mul(zmask, 0.7))
     rough = b.mix_f(zmask, rough, 0.3)
     # painted face (skin kind 0)
     is_skin = b.cmp(kind, 0.0, 0.5)
@@ -431,6 +450,9 @@ def clay_gloss() -> bpy.types.Material:
     normal = b.bump(brush.outputs["Height"], 0.03, 0.002)
     p = _principled(b, **{"Base Color": base, "Metallic": metal, "Roughness": rough, "Coat Weight": 0.6,
                           "Coat Roughness": 0.06, "Coat IOR": 1.5, "Normal": normal})
+    if "Thin Film Thickness" in p.inputs:      # iridescent peacock feathers (Blender 4.2+)
+        b._in(p.inputs["Thin Film Thickness"], b.mul(is_eye, 380.0))
+        p.inputs["Thin Film IOR"].default_value = 1.4
     b.l.new(p.outputs[0], out.inputs["Surface"])
     _CACHE["clay"] = mat
     return mat

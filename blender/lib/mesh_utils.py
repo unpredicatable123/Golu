@@ -122,11 +122,13 @@ def voxel_remesh(obj, voxel: float, smooth_iters: int = 2, apply: bool = True) -
         apply_all_modifiers(obj)
 
 
-def solidify(obj, thickness: float, offset: float = -1.0, apply: bool = True) -> None:
+def solidify(obj, thickness: float, offset: float = -1.0, apply: bool = True, even: bool = False) -> None:
+    """Thin-shell thickness. Even offset stays off by default: on projected fabric grids with near-degenerate
+    faces it divides by tiny angles and throws vertices far away."""
     m = obj.modifiers.new("Solidify", "SOLIDIFY")
     m.thickness = thickness
     m.offset = offset
-    m.use_even_offset = True
+    m.use_even_offset = even
     m.use_quality_normals = True
     if apply:
         apply_all_modifiers(obj)
@@ -491,7 +493,7 @@ def set_part_attributes(obj: bpy.types.Object, paint: Sequence[float], metal: fl
     b.data.foreach_set("vector", (metal, rough, float(kind)) * n)
     z = _ensure_attr(me, "zari", "FLOAT")
     z.data.foreach_set("value", (float(zari),) * n)
-    if garment_uv is None or not me.attributes.get("garment_uv"):
+    if garment_uv is not None or me.attributes.get("garment_uv") is None:
         g = _ensure_attr(me, "garment_uv", "FLOAT2")
         g.data.foreach_set("vector", (garment_uv or (-1.0, -1.0)) * n)
 

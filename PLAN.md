@@ -713,7 +713,7 @@ This table is generated from `content/golu.config.json`; regenerate it if the co
 | 4 | s3_dasaratha | king | 24.2 | wheat | 2 | panchakacham/angavastram · maroon/pitambara · gold | abhaya, kati | moustache, royal_jewellery, kireedam | — | pedestal | standing | namam | -0.4 · front · 14° |
 | 5 | s3_lakshmana | prince | 22.3 | peach | 2 | panchakacham/angavastram · parrot-green/pitambara · gold | anjali, anjali | bow_on_shoulder, kireedam | — | pedestal | standing | namam | -0.25 · front · 16° |
 | 6 | s3_rama | prince | 24.2 | blue | 2 | panchakacham/angavastram · pitambara/kumkum · gold | garland, garland | kireedam, groom_garland | — | pedestal | standing_offering | namam | -0.07 · front · 32° |
-| 7 | s3_sita | goddess_consort | 21.6 | peach | 2 | saree/blouse · kumkum/turmeric · gold | garland, garland | jasmine, bridal_jewellery, nose_ring | — | pedestal | standing_offering | tilak_dot | 0.09 · front · -32° |
+| 7 | s3_sita | goddess_consort | 21.6 | peach | 2 | saree/blouse · kumkum/parrot-green · gold | garland, garland | jasmine, bridal_jewellery, nose_ring | — | pedestal | standing_offering | tilak_dot | 0.09 · front · -32° |
 | 8 | s3_janaka | king | 24.2 | wheat | 2 | panchakacham/angavastram · ivory/maroon · gold | varada, abhaya | beard, royal_jewellery, kireedam | — | pedestal | standing | namam | 0.3 · front · -14° |
 | 9 | s3_vishwamitra | sage | 23.0 | wheat | 2 | veshti/angavastram · saffron/deerskin · none | abhaya, danda | jata, beard, rudraksha, sacred_thread | — | pedestal | standing | vibhuti | 0.5 · back · -12° |
 | 10 | s3_dhanush | object:shiva_dhanush_broken | 6.0 | none | 0 | — | — | — | — | none | static | — | 0.76 · front · -20° |
@@ -780,7 +780,7 @@ This table is generated from `content/golu.config.json`; regenerate it if the co
 | 7 | s8_vidya | goddess | 22.0 | peach | 4 | saree/blouse · kumkum/white · gold | abhaya, varada, palm_leaf, peacock_quill | karanda_makuta, jasmine, nose_ring | — | lotus_seat | seated_lalitasana | tilak_dot | 0.62 · front · -4° |
 | 8 | s8_dhana | goddess | 22.0 | peach | 6 | saree/blouse · rani-pink/pitambara · gold | abhaya_coins, kalasam, chakra, shankha, padma, bow_arrow | karanda_makuta, jasmine, nose_ring, coin_pile | — | lotus_seat | seated_lalitasana | tilak_dot | 0.87 · front · -5° |
 
-#### Step 9 — Main Deities (cloth: turmeric; story props: ganesha_peetam)
+#### Step 9 — Main Deities (cloth: turmeric; story props: none)
 
 | slot | id | archetype | H cm | skin | arms | attire (lower/upper · color/accent · zari) | hands [R1,L1,R2,L2,…] | extras | vahana | seat | pose | mark | x · row · turn |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
