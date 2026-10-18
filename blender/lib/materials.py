@@ -448,7 +448,10 @@ def clay_gloss() -> bpy.types.Material:
     nz = b.noise(tc.outputs["Object"], 60.0)
     rough = b.add(rough, b.mul(b.sub(nz.outputs["Fac"], 0.5), 0.08))
     normal = b.bump(brush.outputs["Height"], 0.03, 0.002)
-    p = _principled(b, **{"Base Color": base, "Metallic": metal, "Roughness": rough, "Coat Weight": 0.6,
+    # matte painted terrain (kind 5: hills, rocks, soil): thin varnish so it doesn't read as plastic
+    is_matte = b.cmp(kind, 5.0, 0.5)
+    coat = b.sub(0.6, b.mul(is_matte, 0.5))
+    p = _principled(b, **{"Base Color": base, "Metallic": metal, "Roughness": rough, "Coat Weight": coat,
                           "Coat Roughness": 0.06, "Coat IOR": 1.5, "Normal": normal})
     if "Thin Film Thickness" in p.inputs:      # iridescent peacock feathers (Blender 4.2+)
         b._in(p.inputs["Thin Film Thickness"], b.mul(is_eye, 380.0))

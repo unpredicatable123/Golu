@@ -182,6 +182,20 @@ def _elephant_parts(P: A.Paint, rng, tag: str, trunk_raised: bool, ears_spread: 
     body = _quadruped(f"eleph_{tag}", P, length=1.2, girth=0.42, leg_r=0.13, neck_to=V((-0.62, 0, 1.0)),
                       head_at=V((-0.72, 0, 1.05)), head_r=0.3, head_size=(0.9, 0.9, 1.0), color=grey,
                       raise_front=0.1 if trunk_raised else 0.0)
+    ivory, pink = P.p.silk("ivory"), P.p.silk("lotus-pink")
+
+    def body_paint(co, n):
+        # painted clay finish: ivory toenails, pink depigmentation freckles and a white forehead line pattern
+        if co.z < 0.07 and n.x < -0.35:
+            return (ivory, 0.0, 0.35, 6)
+        if co.x < -0.8 and co.z > 1.0:
+            if abs(co.y) < 0.012 or (abs(co.y) < 0.13 and abs(co.z - 1.18 + abs(co.y) * 0.9) < 0.01):
+                return (ivory, 0.0, 0.4, 6)
+            if math.sin(co.y * 140) * math.sin(co.z * 120) > 0.72:
+                return (pink, 0.0, 0.5, 6)
+        return None
+
+    _paint_region(body, body_paint)
     parts = [body]
     if trunk_raised:
         pts = [V((-0.95, 0, 0.98)), V((-1.15, 0, 0.9)), V((-1.25, 0, 1.15)), V((-1.15, 0, 1.45)), V((-1.0, 0, 1.55))]
@@ -189,6 +203,8 @@ def _elephant_parts(P: A.Paint, rng, tag: str, trunk_raised: bool, ears_spread: 
         pts = [V((-0.95, 0, 0.98)), V((-1.05, 0, 0.7)), V((-1.08, 0, 0.35)), V((-1.0, 0, 0.18))]
     trunk = MU.tube(f"trunk_{tag}", pts, 0.1, radii=[1.0, 0.8, 0.6, 0.45, 0.4][:len(pts)])
     parts.append(P.col(trunk, grey, 0.45))
+    _paint_region(trunk, lambda co, n: (pink, 0.0, 0.5, 6)
+                  if co.z < 1.1 and math.sin(co.x * 130 + co.y * 50) * math.sin(co.z * 110) > 0.68 else None)
     for s in (-1, 1):
         ear = MU.uv_sphere(f"ear_{tag}{s}", 0.26, 14, 8, scale=(0.18 if not ears_spread else 0.3, 1.0, 1.1))
         A._place(ear, (-0.62, s * (0.3 if not ears_spread else 0.36), 1.08), (0, 0, s * (0.5 if ears_spread else 0.15)))

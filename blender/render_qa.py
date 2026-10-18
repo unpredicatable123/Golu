@@ -168,11 +168,41 @@ def sweep(cfg: C.GoluConfig, out: Path, quality: str) -> Path:
     return Q.contact_sheet(tiles, 7, out / "sweep.png", 300)
 
 
+def lineup(cfg: C.GoluConfig, args: C.CliArgs, out: Path) -> list[Path]:
+    """Wide frontal view of each built step (all dolls in place) for the Phase 3 placement review."""
+    blend = args.out / f"golu_{C.scene_quality(args.quality)}.blend"
+    bpy.ops.wm.open_mainfile(filepath=str(blend))
+    scene = bpy.context.scene
+    R.apply_quality(scene, args.quality, resolution=(1600, 720))
+    from lib.environment import step_geometry
+    steps = step_geometry(cfg.layout)
+    cam = Q.ensure_qa_camera(scene, lens=32)
+    cam.data.dof.use_dof = False
+    scene.camera = cam
+    paths = []
+    for h in steps:
+        if h.n not in args.steps:
+            continue
+        fov = 2 * math.atan(18 / 32)
+        dist = (h.width * 1.08) / 2 / math.tan(fov / 2)
+        target = Vector((0.0, h.y_front + 0.12, h.z_top + 0.13))
+        cam.matrix_world = Q.look_at(target + Vector((0.0, -dist, dist * math.tan(math.radians(9)))), target)
+        p = out / f"lineup_step{h.n}.png"
+        R.render_still(scene, p)
+        paths.append(p)
+        print(f"QA lineup step {h.n} → {p.name}")
+    return paths
+
+
 def main(argv: list[str]) -> int:
     args = C.parse_cli(argv, {"--dolls": dict(default=",".join(QA_DOLLS)), "--angles": dict(type=int, default=24),
-                              "--sweep": dict(action="store_true"), "--res": dict(type=int, default=768)})
+                              "--sweep": dict(action="store_true"), "--res": dict(type=int, default=768),
+                              "--lineup": dict(action="store_true")})
     cfg = C.load_config(args.config)
     out = args.out / "qa"
+    if args.extra["lineup"]:
+        lineup(cfg, args, out)
+        return 0
     ids = [d for d in args.extra["dolls"].split(",") if d]
     angles = args.extra["angles"]
     failures = []

@@ -17,6 +17,13 @@ die() {
   exit 1
 }
 
+# Path as native tools see it (C:/… on Git Bash for paths written into files; unchanged elsewhere).
+to_native() {
+  local p
+  p="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+  if command -v cygpath >/dev/null 2>&1; then cygpath -m "$p"; else echo "$p"; fi
+}
+
 # Locate Blender: $BLENDER → PATH → standard install locations. Prints the path.
 find_blender() {
   if [[ -n "${BLENDER:-}" && -x "$BLENDER" ]]; then echo "$BLENDER"; return 0; fi
@@ -44,7 +51,9 @@ blender_version_ok() {
 # run_blender <script.py> [args after --]
 run_blender() {
   local script="$1"; shift
-  "$BLENDER" -b --factory-startup --python-exit-code 1 -P "$ROOT/$script" -- "$@"
+  mkdir -p "$ROOT/renders/tmp"
+  TMP="$ROOT/renders/tmp" TEMP="$ROOT/renders/tmp" TMPDIR="$ROOT/renders/tmp" \
+    "$BLENDER" -b --factory-startup --python-exit-code 1 -P "$ROOT/$script" -- "$@"
 }
 
 require_blender() {

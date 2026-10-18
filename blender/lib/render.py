@@ -166,10 +166,12 @@ def apply_quality(scene: bpy.types.Scene, quality: str, *, transparent: bool = F
     else:
         r.engine = engine_id_eevee()
         e = scene.eevee
-        e.taa_render_samples = samples or 32
-        for attr, val in (("use_raytracing", True), ("use_shadows", True), ("use_volumetric_shadows", True),
-                          ("volumetric_samples", 32), ("shadow_ray_count", 1), ("shadow_step_count", 6),
-                          ("use_gtao", True), ("gtao_distance", 0.25), ("use_shadow_jitter_viewport", False)):
+        high = quality == "high"     # full-HD EEVEE for machines where Cycles would take days (DECISIONS D58)
+        e.taa_render_samples = samples or (16 if high else 8)
+        for attr, val in (("use_raytracing", False), ("use_shadows", True), ("use_volumetric_shadows", False),
+                          ("volumetric_samples", 16), ("shadow_ray_count", 1),
+                          ("shadow_step_count", 2), ("shadow_resolution_scale", 1.0 if high else 0.5),
+                          ("use_gtao", True), ("gtao_distance", 0.2), ("use_shadow_jitter_viewport", False)):
             if hasattr(e, attr):
                 try:
                     setattr(e, attr, val)
@@ -183,9 +185,12 @@ def apply_quality(scene: bpy.types.Scene, quality: str, *, transparent: bool = F
             except TypeError:
                 pass
         if resolution is None:
-            resolution = (960, 540)
+            resolution = (1920, 1080) if high else (960, 540)
         engine_id = r.engine
     r.resolution_x, r.resolution_y = resolution
+    for ob in scene.objects:
+        if ob.type == "LIGHT" and ob.data.type == "POINT" and ob.data.energy < 5.0:
+            ob.data.use_shadow = engine_id == "CYCLES"
     return engine_id
 
 

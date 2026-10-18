@@ -429,14 +429,14 @@ def danta(P: Paint, rng) -> bpy.types.Object:
 
 
 def chatra(P: Paint, rng) -> bpy.types.Object:
-    handle = MU.cylinder("chatra_handle", 0.0035, 0.3, 8, center=(0, 0, 0.1))
-    canopy = MU.lathe("chatra_top", [(0.0, 0.28), (0.02, 0.275), (0.08, 0.245), (0.1, 0.232), (0.098, 0.228),
-                                     (0.0, 0.25)], 24, screw=False)
+    handle = MU.cylinder("chatra_handle", 0.006, 0.52, 8, center=(0, 0, 0.18))
+    canopy = MU.lathe("chatra_top", [(0.0, 0.5), (0.04, 0.49), (0.15, 0.445), (0.19, 0.42), (0.186, 0.414),
+                                     (0.0, 0.45)], 32, screw=False)
     parts = [P.col(handle, P.p.silk("khaki"), 0.5), P.col(canopy, P.p.silk("khaki"), 0.55)]
     for i in range(12):
         a = i / 12 * math.tau
-        rib = MU.tube(f"chatra_rib{i}", [Vector((0, 0, 0.281)), Vector((math.cos(a) * 0.1, math.sin(a) * 0.1, 0.233))],
-                      0.0016)
+        rib = MU.tube(f"chatra_rib{i}", [Vector((0, 0, 0.502)), Vector((math.cos(a) * 0.19, math.sin(a) * 0.19, 0.42))],
+                      0.0025)
         parts.append(P.col(rib, P.p.silk("maroon"), 0.5))
     return MU.join(parts, "chatra")
 

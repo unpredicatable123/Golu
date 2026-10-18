@@ -1467,9 +1467,21 @@ def build_pedestal(p: Params, sk: Skel, P: A.Paint, footprint: float) -> list[bp
         white = seat == "white_lotus_seat"
         top = (p.seat_h if p.legs in ("pendant", "lalitasana") else 0.0) + 0.02
         top = max(top, 0.06)
-        core = MU.cylinder(f"{pid}_lcore", rad * 0.75, top, 32, center=(0, 0, top / 2 - 0.02))
-        P.col(core, P.p.silk("mango-green"), 0.4, kind=K_DETAIL)
+        core = MU.cylinder(f"{pid}_lcore", rad * 0.62, top, 32, center=(0, 0, top / 2 - 0.02))
+        P.col(core, P.p.silk("white") if white else P.p.silk("lotus-pink"), 0.4, kind=K_DETAIL)
         out.append(core)
+        # reflexed outer petals curling down over the base hide the core (a full lotus, not a pot)
+        for i in range(16):
+            a = (i + 0.25) / 16 * math.tau
+            pet = A.leaf_shell(f"{pid}_lr{i}", min(top, 0.18) * 0.9 + rad * 0.2, rad * 0.42, cup=0.4)
+            A.gradient_paint(pet, P.p.silk("lotus-pink") if not white else P.p.silk("white"), P.p.silk("white"),
+                             rough=0.35, kind=K_DETAIL)
+            pet.rotation_euler = (math.pi - 0.35, 0, 0)
+            MU.apply_transform(pet)
+            pet.rotation_euler = (0, 0, a + math.pi / 2)
+            MU.apply_transform(pet)
+            A._place(pet, (math.cos(a) * rad * 0.66, math.sin(a) * rad * 0.66, top - 0.02))
+            out.append(pet)
         for ring, (n, ln, tilt, z) in enumerate(((14, rad * 0.75, 1.1, top - 0.03), (12, rad * 0.62, 0.75, top - 0.005))):
             for i in range(n):
                 a = (i + 0.5 * ring) / n * math.tau
@@ -1624,7 +1636,6 @@ def finalize(parts: list[bpy.types.Object], p: Params, sk: Skel, collection) -> 
     ob["hotspot_local"] = (hc.x, hc.y, hc.z + sk.rz * 0.3)
     pack_face_props(ob)
     MU.shade_smooth(ob, None)
-    sub = MU.add_subsurf(ob, 1, 1)
     M_ = M.clay_gloss()
     ob.data.materials.clear()
     ob.data.materials.append(M_)
@@ -1665,7 +1676,6 @@ def build_animal(spec: DollSpec, cfg: GoluConfig, collection) -> bpy.types.Objec
     MU.set_origin_bottom_center(j)
     j.location = (0, 0, 0)
     MU.shade_smooth(j, None)
-    MU.add_subsurf(j, 1, 1)
     j.data.materials.clear()
     j.data.materials.append(M.clay_gloss())
     for k, v in dict(head_center=(0.0, 0.0, -10.0), head_radius=1.0, face_yaw=0.0, eye_x=0.0, eye_z=0.0, eye_w=0.01,

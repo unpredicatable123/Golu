@@ -175,9 +175,10 @@ def alpha_report(path: Path) -> dict:
     border = np.concatenate([alpha[:2].ravel(), alpha[-2:].ravel(), alpha[:, :2].ravel(), alpha[:, -2:].ravel()])
     small = alpha[::2, ::2] > 0.02
     islands = [s for s in _islands(small) if s * 4 > 50]
-    semi = (alpha > 0.05) & (alpha < 0.95)
-    opaque = alpha >= 0.95
     lum = _luma(a[..., :3])
+    # semi-transparent edge pixels; black shadow-catcher pixels are a soft shadow, not an edge halo
+    semi = (alpha > 0.05) & (alpha < 0.95) & (lum > 0.03)
+    opaque = alpha >= 0.95
     fringe = 0.0
     if semi.any() and opaque.any():
         # neighbour-opaque mean luminance via 3x3 box over opaque pixels

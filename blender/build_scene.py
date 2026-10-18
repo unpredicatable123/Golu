@@ -14,7 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import bpy  # noqa: E402
 
+from lib import camera as CAM  # noqa: E402
 from lib import config as C  # noqa: E402
+from lib import dioramas as DI  # noqa: E402
 from lib import environment as E  # noqa: E402
 from lib import materials as M  # noqa: E402
 from lib import mesh_utils as MU  # noqa: E402
@@ -26,6 +28,9 @@ from lib import render as R  # noqa: E402
 class BuildResult:
     env: E.EnvironmentHandles
     dolls: dict[str, bpy.types.Object] = field(default_factory=dict)
+    steps: list = field(default_factory=list)
+    timeline: CAM.Timeline | None = None
+    manifest: dict | None = None
     blend: Path | None = None
 
 
@@ -47,6 +52,19 @@ def build(cfg: C.GoluConfig, args: C.CliArgs, scene: bpy.types.Scene) -> BuildRe
     env = E.build_environment(cfg, scene)
     R.log(f"environment built in {time.time() - t0:.1f}s")
     result = BuildResult(env=env)
+    if args.empty:
+        return result
+    t1 = time.time()
+    only = set(args.only) if args.only else None
+    result.steps = DI.build_all(cfg, env.steps, only)
+    result.dolls = {p.spec.id: p.obj for r in result.steps for p in r.placed}
+    R.log(f"{len(result.dolls)} dolls + dioramas built in {time.time() - t1:.1f}s")
+    cam, focus = CAM.build_rig(cfg, scene)
+    shots = []
+    for r in result.steps:
+        shots.append(CAM.plan_shot(cfg, r.handle, [p.obj for p in r.placed]))
+    result.timeline = CAM.build_timeline(cfg)
+    CAM.keyframe_all(cfg, scene, cam, focus, shots, result.timeline, CAM.establishing_pose(cfg, env.steps))
     return result
 
 
@@ -93,6 +111,23 @@ def verify(cfg: C.GoluConfig, result: BuildResult) -> list[str]:
     return errs
 
 
+def verify_manifest(cfg: C.GoluConfig, result: BuildResult) -> list[str]:
+    errs = []
+    m = result.manifest or {}
+    if m.get("total") != 1128:
+        errs.append(f"manifest total {m.get('total')} (expected 1128)")
+    expect = 0
+    for st in m.get("steps", []):
+        if st["global_start"] != expect:
+            errs.append(f"step {st['id']}: global_start {st['global_start']} (expected {expect})")
+        expect += st["count"]
+        for did, tr in st["hotspots"].items():
+            vis = sum(v for _, _, v in tr["t"]) / max(len(tr["t"]), 1)
+            if vis < 0.3:
+                errs.append(f"{did}: visible in only {vis:.0%} of its hold samples")
+    return errs
+
+
 def main(argv: list[str]) -> int:
     args = C.parse_cli(argv)
     cfg = C.load_config(args.config)
@@ -101,6 +136,12 @@ def main(argv: list[str]) -> int:
     R.setup_color_management(scene)
     R.apply_quality(scene, args.quality)
     R.setup_glare(scene, True)
+    if not args.empty:
+        step_dolls = {r.handle.n: [p.obj for p in r.placed] for r in result.steps}
+        lamp_flames = [o for o in result.env.flame_points]
+        result.manifest = CAM.write_manifest(args.out / "manifest.json", cfg, result.timeline, step_dolls, lamp_flames,
+                                             scene, scene.camera)
+        R.log(f"manifest written: {result.timeline.total} frames")
     tag = "empty_" if args.empty else ""
     blend = args.out / f"golu_{tag}{args.quality}.blend"
     save(scene, blend, C.config_hash(args.config))
@@ -108,6 +149,9 @@ def main(argv: list[str]) -> int:
     rc = 0
     if args.verify:
         errs = verify(cfg, result)
+        if not args.empty:
+            errs += DI.verify_placement(cfg, result.steps) if not args.only else []
+            errs += verify_manifest(cfg, result)
         for e in errs:
             print(f"VERIFY FAIL: {e}")
         print(f"VERIFY: {'PASS' if not errs else f'{len(errs)} errors'}")

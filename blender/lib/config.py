@@ -132,7 +132,7 @@ class GoluConfig:
 @dataclass(frozen=True)
 class CliArgs:
     config: Path
-    quality: Literal["draft", "final"]
+    quality: Literal["draft", "high", "final"]
     steps: list[int]
     out: Path
     empty: bool
@@ -193,7 +193,7 @@ def parse_cli(argv: list[str], extra_flags: dict[str, dict] | None = None) -> Cl
     args_after = argv[argv.index("--") + 1:] if "--" in argv else []
     p = argparse.ArgumentParser(prog="golu", add_help=True)
     p.add_argument("--config", default=str(ROOT / "content" / "golu.config.json"))
-    p.add_argument("--quality", choices=["draft", "final"], default="draft")
+    p.add_argument("--quality", choices=["draft", "high", "final"], default="draft")
     p.add_argument("--steps", default="1-9")
     p.add_argument("--out", default=str(ROOT / "renders"))
     p.add_argument("--empty", action="store_true")
@@ -344,15 +344,27 @@ def seed_for(*keys: object) -> int:
     return (h ^ (_SEED_BASE * 2654435761)) & 0x7FFFFFFF
 
 
+def scene_quality(quality: str) -> str:
+    """The built .blend a render quality uses: "high" renders the draft scene with full-HD EEVEE settings."""
+    return "final" if quality == "final" else "draft"
+
+
 def rng_for(*keys: object) -> random.Random:
     return random.Random(seed_for(*keys))
 
 
+# scripts that only render or check an already-built scene (render settings are re-applied at render time)
+_NOT_SCENE = {"render_steps.py", "render_doors.py", "render_props.py", "render_qa.py", "check_iconography.py",
+              "render.py", "qa.py"}
+
+
 def config_hash(path: Path) -> str:
-    """SHA-1 over the config and every Blender script, used to detect stale .blend builds."""
+    """SHA-1 over the config and the scene-building scripts, used to detect stale .blend builds."""
     h = hashlib.sha1()
     h.update(Path(path).read_bytes())
     for f in sorted(BLENDER_DIR.rglob("*.py")):
+        if f.name in _NOT_SCENE:
+            continue
         h.update(f.name.encode())
         h.update(f.read_bytes())
     return h.hexdigest()[:16]

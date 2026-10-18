@@ -145,3 +145,44 @@ The nine step-first-frame bitmaps stay resident as the last fallback, so the can
 **D46 · Generated assets stay out of git.** `renders/`, `web/static/{frames,frames-mobile,doors,props}` and `web/src/lib/frames.json` are gitignored, because the final WebPs are about 150–200 MB. README documents render → encode → build → deploy, and suggests Git LFS or a release archive for sharing a finished render.
 
 **D47 · Repository root.** SPEC §2 names the root `golu-darshan/`. This repository's root (`Golu/`) plays that role and is not renamed.
+
+## E. Decisions made during the build
+
+**D48 · SvelteKit 2 line, pinned.** The newest majors (SvelteKit 3, Vite 8, TypeScript 6) require each other and were released after the period the executor can verify. The app pins the maintained SvelteKit 2.70 / Svelte 5.57 / Vite 7.3 / TypeScript 5.9 line, which covers every SPEC requirement. Upgrading later is a dependency bump.
+
+**D49 · Dolls without subdivision.** Voxel remeshing at 1/175 of doll height plus Laplacian smoothing already gives the soft clay form. A subdivision level on 73 dolls raised the scene from about 3.5M to about 17M vertices, and with the occlusion ray casts it exhausted memory on the 16 GB build machine. QA renders with and without subdivision were indistinguishable.
+
+**D50 · Hotspot occlusion by a static BVH.** `scene.ray_cast` evaluates subdivision for every object on each call. Only the camera moves, so one BVH tree over the base meshes of dolls, story props and tiers is built once and reused for all samples.
+
+**D51 · Lighter EEVEE draft settings.** On an integrated GPU a full-quality EEVEE frame took about 80 s. Draft frames therefore use:
+- 12 TAA samples;
+- no screen-space raytracing or volumetric shadows;
+- shadows at half resolution;
+- no shadows from the small practical lights (agal lamps and wick flames).
+
+Final renders use Cycles with every light casting shadows, so the final images are unaffected.
+
+**D52 · Camera framing.** Each step's shot frames 75% of the step width and dollies until the end dolls sit about 30% inside the frame. The pitch is 10° down, which looks over tall props on the step below (the Govardhana hill, the gantry). This lets every doll pass the "visible in at least 30% of its hold" check.
+
+**D53 · Scale tuning from the step lineups.** These are content values in the config:
+- Step-1 models and children were scaled up so they read at camera distance: Chandrayaan-3 ×1.5, children ×1.25, trains ×1.15–1.2.
+- The PSLV is ×0.8, with its gantry moved to its outer side, so it no longer screens Matsya on step 2.
+- The wild elephant is ×0.7.
+- The eight Ashta Lakshmis are ×0.9, so eight lotus seats fit one tread.
+- The cart is ×0.8.
+
+**D54 · Plate motion.** The aarthi and camphor plates follow an SVG ellipse sampled by GSAP's MotionPathPlugin, as SPEC's stack lists. The distance travelled along it comes from the orbit function, which unit tests check: exactly 3 clockwise and 3 anticlockwise turns, eased at the reversal. The plate's position along the path is therefore exact rather than tween-timed.
+
+**D55 · Tall props versus the step above.** The steps rise 0.24 m, and from the 10° camera the sight line to the next tread's feet clears about 0.29 m above a step. Tall props were therefore sized to that limit:
+- **Wedding mandapam:** the first version had a 0.43 m pyramid roof, which hid Murugan and Valli. It is now 0.267 m pillars under a near-flat silk canopy with a scalloped valance and a small finial. Every hanging edge stays above the camera ray to the couple's faces (the visibility check), and the canopy stays below step 4's sight line.
+- **Govardhana hill:** it has to sit above Krishna's raised finger, so it cannot clear the step above. It was narrowed to 0.28 m and flattened instead. The manifest's occlusion test already tracks the step-8 hotspot it partly covers.
+
+**D56 · Tread trinkets.** The Saints and Ashta Lakshmi steps have no story set, and their evenly spaced dolls left bare cloth between them. Every front-row gap wider than 0.1 m now holds a small brass pooja item just ahead of the dolls: a flower plate, a kumkum and turmeric cup pair, or a kindi. These are decoration, not dolls, so the doll checks ignore them.
+
+**D57 · Matte painted terrain.** M_ClayGloss gains material kind 5: painted terrain (hill, rocks, trees) with a 0.1 clear-coat instead of 0.6. At full varnish the Govardhana hill read as glossy plastic, while golu terrain pieces are matte, poster-painted clay. The doll kinds are unchanged.
+
+**D58 · "High" render tier and frame blending.** On the user's request for sharper, smoother frames before the final pass, a third quality tier sits between draft and final:
+- **Settings:** EEVEE at 1920×1080 with 32 samples, full-resolution shadows from every light, two shadow rays, and screen-space reflections on the varnish.
+- **Scene:** it renders the same built scene as draft, so no rebuild is needed.
+- **Why:** on this laptop (4-core CPU, integrated GPU), Cycles final quality would take days. The high tier gets close to full-HD finish in hours.
+- **Player:** the frame player now blends each frame into the next by the fractional scroll position, and upscales with high-quality smoothing. Scrubbing glides between rendered frames instead of stepping.
