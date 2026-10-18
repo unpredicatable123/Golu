@@ -1,0 +1,12 @@
+/frames/*
+  Cache-Control: public, max-age=31536000, immutable
+/frames-mobile/*
+  Cache-Control: public, max-age=31536000, immutable
+/doors/*
+  Cache-Control: public, max-age=31536000, immutable
+/props/*
+  Cache-Control: public, max-age=31536000, immutable
+/audio/*
+  Cache-Control: public, max-age=2592000
+/_app/immutable/*
+  Cache-Control: public, max-age=31536000, immutable

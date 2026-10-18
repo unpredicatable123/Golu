@@ -1,0 +1,173 @@
+<script lang="ts">
+  // Scroll-driven frame player (SPEC §5.2): one full-viewport DPR-aware canvas, cover-fit, ScrollTrigger scrub 0.5,
+  // drawing in rAF only when the frame (or the viewport) changes. Never blank (FrameCache placeholders).
+  import { onDestroy, onMount, tick } from 'svelte';
+  import { config } from '$lib/config';
+  import { frames, stepOfGlobal, stepProgress } from '$lib/frames';
+  import { FrameCache, decodeWindowFor } from '$lib/engine/FrameCache';
+  import { coverFit, cropWidthFraction, portraitFocusX } from '$lib/engine/coverFit';
+  import { hotspotsAt } from '$lib/engine/hotspots';
+  import { totalScrollPx } from '$lib/engine/scrollMap';
+  import { view } from '$lib/engine/view';
+  import { activeStep, entered, globalFrame } from '$lib/stores';
+
+  let { cache }: { cache: FrameCache } = $props();
+
+  let canvas: HTMLCanvasElement;
+  let spacer: HTMLDivElement;
+  let ctx: CanvasRenderingContext2D | null = null;
+  let raf = 0;
+  let lastDrawn = -1;
+  let lastBitmap: ImageBitmap | null = null;
+  let lastMix = 0;
+  let target = 0;
+  let prevTarget = 0;
+  let dirty = true;
+  let killScroll: (() => void) | null = null;
+  let refreshScroll: (() => void) | null = null;
+  let isEntered = false;
+  let scrollPx = $state(0);
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+    if (ctx) {                                  // resizing the canvas resets its context state
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+    }
+    scrollPx = totalScrollPx(frames.totalFrames, window.innerHeight);
+    dirty = true;
+    tick().then(() => refreshScroll?.());     // re-measure once the spacer has its new height
+  }
+
+  function draw() {
+    raf = requestAnimationFrame(draw);
+    if (!ctx) return;
+    const g = Math.floor(target);
+    const frac = Math.min(1, Math.max(0, target - g));
+    if (g !== lastDrawn && isEntered) {      // no frame streaming behind the entrance (pre-Enter budget < 3 MB)
+      cache.setPlayhead(g, g >= prevTarget ? 1 : -1);
+      prevTarget = g;
+    }
+    const bmp = cache.get(g) ?? cache.nearest(g);
+    if (!bmp) return;
+    // blend toward the next frame by the scroll fraction: smooth motion between rendered frames
+    const next = frac > 0.02 && g + 1 < frames.totalFrames ? cache.get(g + 1) : null;
+    const mix = next ? Math.round(frac * 16) / 16 : 0;
+    if (g === lastDrawn && bmp === lastBitmap && mix === lastMix && !dirty) return;
+    const { step, local } = stepOfGlobal(g);
+    const W = canvas.width;
+    const H = canvas.height;
+    const srcW = bmp.width;
+    const srcH = bmp.height;
+    let focus = 0.5;
+    const crop = cropWidthFraction(srcW, srcH, W, H);
+    if (crop < 0.98) {
+      const sp = stepProgress(g);
+      const xs = hotspotsAt(frames, step, Math.min(local, frames.steps[step - 1].hold[1])).map((h) => h.x);
+      focus = portraitFocusX(xs, crop, sp.phase === 'hold' ? sp.p : sp.phase === 'finale' ? 0.5 : 1);
+    }
+    const r = coverFit(srcW, srcH, W, H, focus);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(bmp, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
+    if (next && mix > 0) {
+      ctx.globalAlpha = mix;
+      ctx.drawImage(next, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+    lastDrawn = g;
+    lastBitmap = bmp;
+    lastMix = mix;
+    dirty = false;
+    const css = 1 / Math.min(window.devicePixelRatio || 1, 2);
+    view.set({ rect: { ...r, dw: W * css, dh: H * css }, srcW, srcH, width: W * css, height: H * css, step, local });
+    globalFrame.set(g);
+    activeStep.set(step);
+  }
+
+  onMount(() => {
+    ctx = canvas.getContext('2d', { alpha: false });
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';     // frames are upscaled on large or high-DPI screens
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    raf = requestAnimationFrame(draw);
+    let cancelled = false;
+    (async () => {
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      await tick();                           // the spacer must have its height before ScrollTrigger measures it
+      if (cancelled) return;
+      gsap.registerPlugin(ScrollTrigger);
+      const proxy = { frame: 0 };
+      const tween = gsap.to(proxy, {
+        frame: frames.totalFrames - 1,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: spacer,
+          start: 'top top',
+          end: () => `+=${Math.max(1, spacer.offsetHeight - window.innerHeight)}`,
+          invalidateOnRefresh: true,
+          scrub: 0.5,
+        },
+        onUpdate: () => {
+          target = proxy.frame;
+        },
+      });
+      killScroll = () => {
+        tween.scrollTrigger?.kill();
+        tween.kill();
+      };
+      refreshScroll = () => ScrollTrigger.refresh();
+      refreshScroll();
+    })();
+    if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+      const w = window as Window;
+      w.__golu = w.__golu ?? { stats: () => cache.stats(), ritualLog: [], audio: () => ({ state: 'none', om: 0, missing: [] }) };
+      w.__golu.stats = () => cache.stats();
+    }
+    // the entrance overlay is removed on Enter: re-measure so the scrub range matches the final layout
+    const unsubEntered = entered.subscribe((v) => {
+      isEntered = v;
+      if (!v) return;
+      cache.setPlayhead(Math.floor(target), 1);   // start streaming the current and next step now
+      tick().then(() => refreshScroll?.());
+    });
+    return () => {
+      cancelled = true;
+      unsubEntered();
+    };
+  });
+
+  onDestroy(() => {
+    if (typeof window === 'undefined') return;
+    cancelAnimationFrame(raf);
+    window.removeEventListener('resize', resize);
+    killScroll?.();
+  });
+</script>
+
+<div class="frame-wrap" role="img" aria-label={`${config.ui.canvas_alt_ta} — ${config.ui.canvas_alt_en}`}>
+  <canvas bind:this={canvas} class="frame-canvas" aria-hidden="true"></canvas>
+</div>
+<div bind:this={spacer} class="spacer" style:height="{scrollPx}px" aria-hidden="true"></div>
+
+<style>
+  .frame-canvas {
+    position: fixed;
+    inset: 0;
+    display: block;
+    background: var(--tok-night);
+    z-index: 0;
+  }
+  .spacer {
+    position: relative;
+    width: 1px;
+    pointer-events: none;
+  }
+</style>
