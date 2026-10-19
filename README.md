@@ -115,10 +115,18 @@ Without the audio files in `web/static/audio/`, bells and Om are synthesised in 
 
 ## 5. Deploy
 
+**Vercel (how this project is deployed).** Import the GitHub repository in Vercel. No settings are needed: the root
+`vercel.json` installs and builds in `web/` (`npm ci`, `npm run build`) and serves `web/build` with long-lived caching
+for frames and media. The encoded frames and `web/src/lib/frames.json` are committed (DECISIONS D67), so Vercel's
+clean clone builds without Blender or ffmpeg. After a re-render, run `scripts/encode_frames.sh`, commit `web/static`
+and `web/src/lib/frames.json`, and push.
+
+**Other static hosts:**
+
 `web/build` is a fully static site, so any static host works (Netlify, Cloudflare Pages, GitHub Pages, S3 + CDN):
 - **Caching:** `web/static/_headers` gives frames, doors and sprites long immutable caching. Netlify and Cloudflare Pages read that file. On other hosts, set `Cache-Control: public, max-age=31536000, immutable` for `/frames*`, `/doors/*` and `/props/*`.
 - **Cache busting:** frame URLs carry `?v=<version>` from `frames.json`, so a re-render busts caches automatically.
-- **Size:** generated frames are about 170 MB and are git-ignored (DECISIONS D46). Deploy from the machine that encoded them, or share a finished render through a release archive or Git LFS.
+- **Size:** the encoded frames are about 330 MB and are committed so any host can build from git (DECISIONS D67).
 
 ## 6. Project layout
 

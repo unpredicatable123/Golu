@@ -13,9 +13,9 @@ web/build/
 web/test-results/
 web/playwright-report/
 
-# Generated web assets (produced by scripts/encode_frames.sh)
-web/static/frames/
-web/static/frames-mobile/
-web/static/doors/
-web/static/props/
-web/src/lib/frames.json
+# Generated web assets (web/static/frames*, doors, props and web/src/lib/frames.json) ARE committed:
+# Vercel builds from git, so the encoded frames must be in the repository (DECISIONS D67).
+# The raw PNG renders above stay out of git.
+
+# Local-only files
+om-chant.mp3.mpeg
