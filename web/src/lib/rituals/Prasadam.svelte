@@ -14,7 +14,10 @@
   const v = frames.version;
 
   let fx: HTMLCanvasElement;
-  let bowlEls: HTMLDivElement[] = [];
+  let trayImg: HTMLImageElement;
+  // the composite sprite is square with the tray in its middle band: the frame shows rows CROP_TOP … CROP_TOP+CROP_H
+  const CROP_TOP = 0.3;
+  const CROP_H = 0.5625;
   let shown = $state(false);
   let taken = $state(false);
   let blessing = $state('');
@@ -53,12 +56,12 @@
       return img;
     });
     petals = new PetalShower(ctx, sprites);
-    const steam = new Steam(ctx, () =>
-      bowlEls.filter(Boolean).map((el) => {
-        const r = el.getBoundingClientRect();
-        return [r.left + r.width / 2, r.top + r.height * 0.25] as [number, number];
-      })
-    );
+    // steam rises from each bowl as rendered in the composite tray (measured centres, mapped through the crop)
+    const steam = new Steam(ctx, () => {
+      if (!trayImg) return [];
+      const r = trayImg.getBoundingClientRect();
+      return P.composite_bowls.map(([u, v]) => [r.left + u * r.width, r.top + ((v - CROP_TOP) / CROP_H - 0.03) * r.height] as [number, number]);
+    });
     requestAnimationFrame(() => (shown = true));
     setTimeout(() => takeBtn?.querySelector('button')?.focus(), 900);
     let last = performance.now();
@@ -91,15 +94,17 @@
 
 <div class="prasadam" class:shown class:still={$reducedMotion} role="dialog" aria-modal="true" aria-label={`${P.label_ta} — ${P.label_en}`}>
   <div class="tray">
-    <img class="leaf" src={`/props/${P.tray_sprite}.webp?v=${v}`} alt="" aria-hidden="true" />
-    <div class="bowls">
-      {#each trio as d, i (d.id)}
-        <div class="bowl" class:lift={taken} bind:this={bowlEls[i]} style:transition-delay="{i * 90}ms">
-          <img src={`/props/${d.sprite}.webp?v=${v}`} alt={`${d.name_ta} — ${d.name_en}`} />
-          <p class="lbl"><span class="ta" lang="ta">{d.name_ta}</span><span class="en" lang="en">{d.name_en}</span></p>
-        </div>
-      {/each}
+    <!-- the whole tray rendered in 3D (leaf, brass plate and the configured trio in their bowls), so every bowl sits
+         on the leaf; the dish names follow in the same left-to-right order -->
+    <div class="tray-frame" class:lift={taken}>
+      <img class="tray-img" bind:this={trayImg} src={`/props/${P.composite_sprite}.webp?v=${v}`}
+           alt={trio.map((d) => `${d.name_ta} — ${d.name_en}`).join(', ')} />
     </div>
+    <ul class="names">
+      {#each trio as d (d.id)}
+        <li><span class="ta" lang="ta">{d.name_ta}</span><span class="en" lang="en">{d.name_en}</span></li>
+      {/each}
+    </ul>
     <div class="actions">
       <div bind:this={takeBtn}>
         <BrassButton size="md" ta={P.take_ta} en={P.take_en} disabled={taken} onclick={take} />
@@ -128,16 +133,24 @@
   .shown .tray { transform: translate(-50%, 0); }
   .still .tray { transition: opacity 0.4s ease; transform: translate(-50%, 0); opacity: 0; }
   .still.shown .tray { opacity: 1; }
-  .leaf { position: absolute; inset: auto 0 0 0; width: 100%; filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.6)); }
-  .bowls { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2%; padding: 0 6% 18%; align-items: end; }
-  .bowl { text-align: center; transition: transform 0.7s ease, filter 0.7s ease; }
-  .bowl img { width: 100%; height: auto; display: block; }
-  .bowl.lift { transform: translateY(-14px); filter: drop-shadow(0 0 18px rgb(255 200 110 / 0.85)) brightness(1.08); }
-  .still .bowl.lift { transform: none; }
-  .lbl { margin: 0.2rem 0 0; display: flex; flex-direction: column; line-height: 1.25; text-shadow: 0 1px 4px rgb(0 0 0 / 0.9); }
-  .lbl .ta { font-family: var(--font-ta); font-size: clamp(0.78rem, 2vw, 1rem); color: #f6dfa0; font-weight: 600; }
-  .lbl .en { font-family: var(--font-en); font-size: clamp(0.76rem, 1.9vw, 0.95rem); color: var(--tok-sandal); }
-  .actions { position: relative; display: flex; justify-content: center; align-items: center; gap: 0.8rem; margin-top: -10%; padding-bottom: 2%; }
+  .tray-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1024 / 576;               /* CROP_H of the square sprite */
+    transition: transform 0.7s ease, filter 0.7s ease;
+    filter: drop-shadow(0 14px 22px rgb(0 0 0 / 0.6));
+  }
+  .tray-img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: 50% 68.6%; /* CROP_TOP */ }
+  .tray-frame.lift { transform: translateY(-10px); filter: drop-shadow(0 0 22px rgb(255 200 110 / 0.8)) brightness(1.08); }
+  .still .tray-frame.lift { transform: none; }
+  .names {
+    list-style: none; margin: 0.3rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+    text-align: center; line-height: 1.25; text-shadow: 0 1px 4px rgb(0 0 0 / 0.9);
+  }
+  .names li { display: flex; flex-direction: column; }
+  .names .ta { font-family: var(--font-ta); font-size: clamp(0.78rem, 2vw, 1rem); color: #f6dfa0; font-weight: 600; }
+  .names .en { font-family: var(--font-en); font-size: clamp(0.76rem, 1.9vw, 0.95rem); color: var(--tok-sandal); }
+  .actions { position: relative; display: flex; justify-content: center; align-items: center; gap: 0.8rem; margin-top: 0.6rem; padding-bottom: 2%; }
   .close {
     width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1px solid var(--tok-brass);
     background: color-mix(in srgb, var(--tok-maroon) 80%, black); color: var(--tok-sandal); cursor: pointer;

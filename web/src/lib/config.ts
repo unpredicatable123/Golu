@@ -39,6 +39,8 @@ export interface PlateRitual {
   label_en: string;
   label_ta: string;
   sprite: string;
+  /** flame base (the wick, or the camphor block's top) in the sprite, as fractions of its width/height */
+  flame_anchor: [number, number];
   flame: 'ghee' | 'camphor';
   motion: Motion;
   bell: { strikes_per_circle: number; volume: number };
@@ -73,6 +75,8 @@ export interface GoluConfig {
       blessing_en: string;
       tray_sprite: string;
       composite_sprite: string;
+      /** centres of the trio's bowls in the composite sprite (fractions), left to right */
+      composite_bowls: [number, number][];
       petal_sprites: string[];
       auto_close_seconds: number;
     };

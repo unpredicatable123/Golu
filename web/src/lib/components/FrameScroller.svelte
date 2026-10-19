@@ -19,7 +19,6 @@
   let raf = 0;
   let lastDrawn = -1;
   let lastBitmap: ImageBitmap | null = null;
-  let lastMix = 0;
   let target = 0;
   let prevTarget = 0;
   let dirty = true;
@@ -39,25 +38,23 @@
       ctx.imageSmoothingQuality = 'high';
     }
     scrollPx = totalScrollPx(frames.totalFrames, window.innerHeight);
+    cache.setDrawSize(canvas.width, canvas.height);
     dirty = true;
     tick().then(() => refreshScroll?.());     // re-measure once the spacer has its new height
   }
 
   function draw() {
     raf = requestAnimationFrame(draw);
-    if (!ctx) return;
-    const g = Math.floor(target);
-    const frac = Math.min(1, Math.max(0, target - g));
+    if (!ctx || !isEntered) return;          // nothing to draw behind the entrance doors
+    const g = Math.round(target);
     if (g !== lastDrawn && isEntered) {      // no frame streaming behind the entrance (pre-Enter budget < 3 MB)
       cache.setPlayhead(g, g >= prevTarget ? 1 : -1);
       prevTarget = g;
     }
+    // always one whole rendered frame: crossfading neighbours ~20 px apart reads as a double, blurred image (D65)
     const bmp = cache.get(g) ?? cache.nearest(g);
     if (!bmp) return;
-    // blend toward the next frame by the scroll fraction: smooth motion between rendered frames
-    const next = frac > 0.02 && g + 1 < frames.totalFrames ? cache.get(g + 1) : null;
-    const mix = next ? Math.round(frac * 16) / 16 : 0;
-    if (g === lastDrawn && bmp === lastBitmap && mix === lastMix && !dirty) return;
+    if (g === lastDrawn && bmp === lastBitmap && !dirty) return;
     const { step, local } = stepOfGlobal(g);
     const W = canvas.width;
     const H = canvas.height;
@@ -71,16 +68,9 @@
       focus = portraitFocusX(xs, crop, sp.phase === 'hold' ? sp.p : sp.phase === 'finale' ? 0.5 : 1);
     }
     const r = coverFit(srcW, srcH, W, H, focus);
-    ctx.globalAlpha = 1;
     ctx.drawImage(bmp, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
-    if (next && mix > 0) {
-      ctx.globalAlpha = mix;
-      ctx.drawImage(next, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
-      ctx.globalAlpha = 1;
-    }
     lastDrawn = g;
     lastBitmap = bmp;
-    lastMix = mix;
     dirty = false;
     const css = 1 / Math.min(window.devicePixelRatio || 1, 2);
     view.set({ rect: { ...r, dw: W * css, dh: H * css }, srcW, srcH, width: W * css, height: H * css, step, local });

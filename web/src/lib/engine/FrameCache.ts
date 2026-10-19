@@ -49,6 +49,30 @@ export class FrameCache {
 
   private decode: Decoder = (blob) => (this.opts.decoder ? this.opts.decoder(blob) : createImageBitmap(blob));
 
+  /** Canvas size in device pixels: frames are decoded straight to their cover-fit draw size, off the main
+   *  thread, so each draw is a cheap 1:1 copy instead of a high-quality downscale (smooth scrubbing). */
+  private drawSize: { w: number; h: number } | null = null;
+
+  setDrawSize(w: number, h: number): void {
+    if (this.drawSize && this.drawSize.w === w && this.drawSize.h === h) return;
+    this.drawSize = { w, h };
+    for (const b of this.bitmaps.values()) b.close();      // re-decode the window at the new size
+    this.bitmaps.clear();
+    this.decodeWindow();
+  }
+
+  private decodeFrame(blob: Blob): Promise<ImageBitmap> {
+    if (this.opts.decoder || !this.drawSize) return this.decode(blob);
+    const v = this.opts.variant === 'desktop' ? this.f.desktop : this.f.mobile;
+    const scale = Math.max(this.drawSize.w / v.width, this.drawSize.h / v.height);
+    if (scale >= 0.95) return this.decode(blob);
+    return createImageBitmap(blob, {
+      resizeWidth: Math.round(v.width * scale),
+      resizeHeight: Math.round(v.height * scale),
+      resizeQuality: 'high',
+    });
+  }
+
   /** First frame of every step at mobile size: tiny, decoded once, never evicted (the last-resort fallback). */
   async preloadPlaceholders(onProgress?: (done: number, total: number) => void): Promise<void> {
     const steps = this.f.steps;
@@ -127,7 +151,7 @@ export class FrameCache {
     const blob = this.blobs.get(g);
     if (!blob) return;
     this.decoding.add(g);
-    this.decode(blob)
+    this.decodeFrame(blob)
       .then((bmp) => {
         this.decoding.delete(g);
         if (this.disposed || Math.abs(g - this.playhead) > this.opts.decodeWindow * 2) {

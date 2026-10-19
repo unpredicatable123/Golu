@@ -67,75 +67,75 @@ Exceptions (each one also appears in DECISIONS.md):
 
 ## 2. Per-doll visual sheet
 
-Status columns are filled in during the build: **C** = passes the config check, **T** = confirmed on the QA turntable (Phase 2; QA dolls only), **F** = confirmed in the draft fly-through (Phase 3).
+Status columns are filled in during the build: **C** = passes the config check, **T** = confirmed on the QA turntable (Phase 2; QA dolls only), **F** = confirmed in the fly-through (Phase 3 draft review; every doll visible for at least 30% of its step hold per `build_scene.py --verify`).
 
 | id | must read as | C | T | F |
 |---|---|---|---|---|
-| s1_pslv | White four-stage rocket with six strap-on boosters, inside a red-and-white lattice gantry | ✓ | – |  |
-| s1_dish | White parabolic dish on a tilting mount | ✓ | – |  |
-| s1_scientist_woman | Silk saree, jasmine, ID lanyard, joined hands of celebration | ✓ | – |  |
-| s1_scientist_man | Shirt and trousers, spectacles, clipboard, pointing | ✓ | – |  |
-| s1_chandrayaan | Gold-foil box lander on four legs, ramp, six-wheeled rover with a solar panel, on a grey cratered patch | ✓ | – |  |
-| s1_child_girl | Pavadai-sattai, braids with jasmine, open laptop with a soft glowing screen | ✓ | – |  |
-| s1_child_boy | School shirt and shorts, pointing at the laptop | ✓ | – |  |
-| s1_vande_bharat | Aerodynamic nose; white body with a blue band (the original livery) on a short track | ✓ | – |  |
-| s1_metro | Steel-grey coach with blue band, on a pillar-and-beam viaduct | ✓ | – |  |
-| s2_matsya | Blue torso on a fish tail, scales, shankha (L2) and chakra (R2) | ✓ | – |  |
-| s2_kurma | Blue torso rising from a domed shell with hex scutes | ✓ | – |  |
-| s2_varaha | Boar head with upturned tusks, Bhudevi seated on the left arm | ✓ | – |  |
-| s2_narasimha | Lion head, orange-gold mane, fangs, namam; stylised figure across the lap | ✓ | ✓ |  |
-| s2_vamana | Small blue boy with palm-leaf umbrella, water pot, tuft, deerskin, sacred thread | ✓ | – |  |
-| s2_parasurama | Axe in R1, matted hair, saffron veshti | ✓ | – |  |
-| s2_rama | Bow and arrow in front hands, shankha-chakra behind, quiver | ✓ | ✓ |  |
-| s2_balarama | Fair skin, blue garments, plough and pestle | ✓ | – |  |
-| s2_krishna | Flute across both front hands, peacock feather, crossed legs | ✓ | – |  |
-| s2_kalki | White horse with red caparison, sword raised | ✓ | – |  |
-| s3_thavil | Barrel drum on a strap, stick and thimbles | ✓ | – |  |
-| s3_nadaswaram | Long double-reed pipe with a flared bell | ✓ | – |  |
-| s3_vasishta | White beard, jata, kamandalu | ✓ | – |  |
-| s3_dasaratha | Crowned elderly king, moustache, maroon silk | ✓ | – |  |
-| s3_lakshmana | Fair, green silk, bow on his shoulder, joined hands | ✓ | – |  |
-| s3_rama | Blue, two arms, raising a thick garland, turned toward Sita | ✓ | – |  |
-| s3_sita | Red bridal silk, jasmine, nose ring, garland raised, turned toward Rama | ✓ | ✓ |  |
-| s3_janaka | Crowned king with beard, blessing | ✓ | – |  |
-| s3_vishwamitra | Saffron robes, beard, staff | ✓ | – |  |
-| s3_dhanush | Great curved bow in two pieces, gold-banded | ✓ | – |  |
-| s4_valli | Green half-saree, sling raised, on a watch platform in the millet | ✓ | – |  |
-| s4_elephant | Charging elephant, trunk raised, facing Valli | ✓ | – |  |
-| s4_murugan | Vel with a leaf-shaped blade, kireedam, vibhuti, red silk | ✓ | ✓ |  |
-| s4_peacock | Fanned tail of eye-feathers, iridescent blue neck | ✓ | ✓ |  |
-| s4_deivanai | Yellow silk, blue water lily (nilotpala), on Murugan's left (viewer's right) | ✓ | – |  |
-| s4_narada | Tambura, chipla, tuft, standing on a cloud | ✓ | – |  |
-| s5_chettiar | Bare-chested with angavastram, moustache, gold chain, scales and ledger, seated at the counter | ✓ | ✓ |  |
-| s5_chettichi | Brinjal-purple saree, measure in hand | ✓ | – |  |
-| s5_vendor | Squatting with a basket of brinjal, drumsticks and greens | ✓ | – |  |
-| s5_kolam_woman | Bent to the floor drawing a small kolam, bowl of rice flour | ✓ | – |  |
-| s5_potter | Squatting at the wheel shaping a pot | ✓ | – |  |
-| s5_cow | White cow, painted horns, kumkum on the forehead, neck bell | ✓ | – |  |
-| s5_calf | Calf beside the cow | ✓ | – |  |
-| s5_bullock_cart | Two humped grey-white bullocks with painted horns, wooden cart | ✓ | – |  |
-| s5_cart_driver | Turban cloth, goad stick, on the yoke | ✓ | – |  |
-| s6_periyazhwar | Joined hands, namam, tuft | ✓ | – |  |
-| s6_andal | Side kondai with jasmine, parrot on her left hand, lotus in her right | ✓ | – |  |
-| s6_nammazhwar | Seated padmasana, chin mudra, hand on heart | ✓ | – |  |
-| s6_thiruvalluvar | White robes, beard, hair knot, writing on palm leaf, no mark | ✓ | – |  |
-| s6_sambandar | Small child mid-dance, finger pointing up, cup in left hand | ✓ | – |  |
-| s6_appar | Shaven head, vibhuti, rudraksha, hoe on shoulder, joined hands | ✓ | – |  |
-| s6_avvaiyar | Stooped elder in white, walking stick, palm leaf | ✓ | – |  |
-| s7_yashoda | Seated churning a tall pot with a rope churn | ✓ | – |  |
-| s7_vennai_kannan | Crawling blue baby, butter on fingers, pot tipped over | ✓ | – |  |
-| s7_gopi_pot | Pot balanced on her head | ✓ | – |  |
-| s7_kaliya_krishna | Dancing on five dark hoods, holding the serpent's tail | ✓ | – |  |
-| s7_govardhana_krishna | Hill held up on his left little finger, flute in right | ✓ | – |  |
-| s7_gopi_shelter | Joined hands under the hill | ✓ | – |  |
-| s7_cow_shelter | Cow under the hill | ✓ | – |  |
-| s8_adi … s8_dhana | Each on a pink lotus with the arm count and emblems in rules R19–R26 | ✓ | – |  |
-| s9_durga | Eight arms, trishula forward, riding a maned lion | ✓ | – |  |
-| s9_lakshmi | Pink silk, two lotuses, coins pouring into a small pile | ✓ | – |  |
-| s9_ganesha | Grey elephant head, right tusk broken, trunk to the modak, mouse at the peetam | ✓ | ✓ |  |
-| s9_saraswati | White saree, veena across the lap, swan beside | ✓ | – |  |
-| s9_kalasam | Brass kalasam, mango leaves, coconut, gold Amman face, on a rice mound | ✓ | – |  |
-| s9_marapachi_raja / _rani | Red-brown wood figures with simple painted faces, dressed in silk | ✓ | – |  |
+| s1_pslv | White four-stage rocket with six strap-on boosters, inside a red-and-white lattice gantry | ✓ | – | ✓ |
+| s1_dish | White parabolic dish on a tilting mount | ✓ | – | ✓ |
+| s1_scientist_woman | Silk saree, jasmine, ID lanyard, joined hands of celebration | ✓ | – | ✓ |
+| s1_scientist_man | Shirt and trousers, spectacles, clipboard, pointing | ✓ | – | ✓ |
+| s1_chandrayaan | Gold-foil box lander on four legs, ramp, six-wheeled rover with a solar panel, on a grey cratered patch | ✓ | – | ✓ |
+| s1_child_girl | Pavadai-sattai, braids with jasmine, open laptop with a soft glowing screen | ✓ | – | ✓ |
+| s1_child_boy | School shirt and shorts, pointing at the laptop | ✓ | – | ✓ |
+| s1_vande_bharat | Aerodynamic nose; white body with a blue band (the original livery) on a short track | ✓ | – | ✓ |
+| s1_metro | Steel-grey coach with blue band, on a pillar-and-beam viaduct | ✓ | – | ✓ |
+| s2_matsya | Blue torso on a fish tail, scales, shankha (L2) and chakra (R2) | ✓ | – | ✓ |
+| s2_kurma | Blue torso rising from a domed shell with hex scutes | ✓ | – | ✓ |
+| s2_varaha | Boar head with upturned tusks, Bhudevi seated on the left arm | ✓ | – | ✓ |
+| s2_narasimha | Lion head, orange-gold mane, fangs, namam; stylised figure across the lap | ✓ | ✓ | ✓ |
+| s2_vamana | Small blue boy with palm-leaf umbrella, water pot, tuft, deerskin, sacred thread | ✓ | – | ✓ |
+| s2_parasurama | Axe in R1, matted hair, saffron veshti | ✓ | – | ✓ |
+| s2_rama | Bow and arrow in front hands, shankha-chakra behind, quiver | ✓ | ✓ | ✓ |
+| s2_balarama | Fair skin, blue garments, plough and pestle | ✓ | – | ✓ |
+| s2_krishna | Flute across both front hands, peacock feather, crossed legs | ✓ | – | ✓ |
+| s2_kalki | White horse with red caparison, sword raised | ✓ | – | ✓ |
+| s3_thavil | Barrel drum on a strap, stick and thimbles | ✓ | – | ✓ |
+| s3_nadaswaram | Long double-reed pipe with a flared bell | ✓ | – | ✓ |
+| s3_vasishta | White beard, jata, kamandalu | ✓ | – | ✓ |
+| s3_dasaratha | Crowned elderly king, moustache, maroon silk | ✓ | – | ✓ |
+| s3_lakshmana | Fair, green silk, bow on his shoulder, joined hands | ✓ | – | ✓ |
+| s3_rama | Blue, two arms, raising a thick garland, turned toward Sita | ✓ | – | ✓ |
+| s3_sita | Red bridal silk, jasmine, nose ring, garland raised, turned toward Rama | ✓ | ✓ | ✓ |
+| s3_janaka | Crowned king with beard, blessing | ✓ | – | ✓ |
+| s3_vishwamitra | Saffron robes, beard, staff | ✓ | – | ✓ |
+| s3_dhanush | Great curved bow in two pieces, gold-banded | ✓ | – | ✓ |
+| s4_valli | Green half-saree, sling raised, on a watch platform in the millet | ✓ | – | ✓ |
+| s4_elephant | Charging elephant, trunk raised, facing Valli | ✓ | – | ✓ |
+| s4_murugan | Vel with a leaf-shaped blade, kireedam, vibhuti, red silk | ✓ | ✓ | ✓ |
+| s4_peacock | Fanned tail of eye-feathers, iridescent blue neck | ✓ | ✓ | ✓ |
+| s4_deivanai | Yellow silk, blue water lily (nilotpala), on Murugan's left (viewer's right) | ✓ | – | ✓ |
+| s4_narada | Tambura, chipla, tuft, standing on a cloud | ✓ | – | ✓ |
+| s5_chettiar | Bare-chested with angavastram, moustache, gold chain, scales and ledger, seated at the counter | ✓ | ✓ | ✓ |
+| s5_chettichi | Brinjal-purple saree, measure in hand | ✓ | – | ✓ |
+| s5_vendor | Squatting with a basket of brinjal, drumsticks and greens | ✓ | – | ✓ |
+| s5_kolam_woman | Bent to the floor drawing a small kolam, bowl of rice flour | ✓ | – | ✓ |
+| s5_potter | Squatting at the wheel shaping a pot | ✓ | – | ✓ |
+| s5_cow | White cow, painted horns, kumkum on the forehead, neck bell | ✓ | – | ✓ |
+| s5_calf | Calf beside the cow | ✓ | – | ✓ |
+| s5_bullock_cart | Two humped grey-white bullocks with painted horns, wooden cart | ✓ | – | ✓ |
+| s5_cart_driver | Turban cloth, goad stick, on the yoke | ✓ | – | ✓ |
+| s6_periyazhwar | Joined hands, namam, tuft | ✓ | – | ✓ |
+| s6_andal | Side kondai with jasmine, parrot on her left hand, lotus in her right | ✓ | – | ✓ |
+| s6_nammazhwar | Seated padmasana, chin mudra, hand on heart | ✓ | – | ✓ |
+| s6_thiruvalluvar | White robes, beard, hair knot, writing on palm leaf, no mark | ✓ | – | ✓ |
+| s6_sambandar | Small child mid-dance, finger pointing up, cup in left hand | ✓ | – | ✓ |
+| s6_appar | Shaven head, vibhuti, rudraksha, hoe on shoulder, joined hands | ✓ | – | ✓ |
+| s6_avvaiyar | Stooped elder in white, walking stick, palm leaf | ✓ | – | ✓ |
+| s7_yashoda | Seated churning a tall pot with a rope churn | ✓ | – | ✓ |
+| s7_vennai_kannan | Crawling blue baby, butter on fingers, pot tipped over | ✓ | – | ✓ |
+| s7_gopi_pot | Pot balanced on her head | ✓ | – | ✓ |
+| s7_kaliya_krishna | Dancing on five dark hoods, holding the serpent's tail | ✓ | – | ✓ |
+| s7_govardhana_krishna | Hill held up on his left little finger, flute in right | ✓ | – | ✓ |
+| s7_gopi_shelter | Joined hands under the hill | ✓ | – | ✓ |
+| s7_cow_shelter | Cow under the hill | ✓ | – | ✓ |
+| s8_adi … s8_dhana | Each on a pink lotus with the arm count and emblems in rules R19–R26 | ✓ | – | ✓ |
+| s9_durga | Eight arms, trishula forward, riding a maned lion | ✓ | – | ✓ |
+| s9_lakshmi | Pink silk, two lotuses, coins pouring into a small pile | ✓ | – | ✓ |
+| s9_ganesha | Grey elephant head, right tusk broken, trunk to the modak, mouse at the peetam | ✓ | ✓ | ✓ |
+| s9_saraswati | White saree, veena across the lap, swan beside | ✓ | – | ✓ |
+| s9_kalasam | Brass kalasam, mango leaves, coconut, gold Amman face, on a rice mound | ✓ | – | ✓ |
+| s9_marapachi_raja / _rani | Red-brown wood figures with simple painted faces, dressed in silk | ✓ | – | ✓ |
 
 ## 3. Sources
 

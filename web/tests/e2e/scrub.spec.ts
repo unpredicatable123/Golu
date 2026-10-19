@@ -15,6 +15,8 @@ test('audio context starts on Enter and the Om fades in', async ({ page }) => {
 });
 
 test('never shows a blank canvas while scrubbing fast', async ({ page }) => {
+  // 100 jumps, each with a canvas readback: headless Chromium decodes 1080p WebP in software (~200 ms/frame here)
+  test.setTimeout(240_000);
   await enterGolu(page);
   const max = await scrollMax(page);
   let blanks = 0;

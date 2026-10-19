@@ -1544,7 +1544,7 @@ def attach_vahana(p: Params, sk: Skel) -> tuple[list[bpy.types.Object], float]:
 
 def write_face_props(ob: bpy.types.Object, p: Params, sk: Skel) -> None:
     hk = p.tpl.head_kind
-    hc = sk.up(sk.head_c)
+    hc = sk.up(sk.head_c) + V((0.0, 0.0, getattr(sk, "lift", 0.0)))
     ob["head_center"] = (hc.x, hc.y, hc.z)
     ob["head_radius"] = sk.rz
     ob["face_yaw"] = 0.0
@@ -1594,6 +1594,7 @@ def build_figure(p: Params, collection) -> bpy.types.Object:
     parts += build_hands_and_items(p, sk, P)
     parts += build_extras(p, sk, P, surf)
     vparts, lift = attach_vahana(p, sk)
+    sk.lift = lift          # riders sit on the saddle: the head (face paint, hotspot) moves up with them
     if lift:
         for o in parts:
             MU.transform(o, Matrix.Translation(V((0, 0, lift))))

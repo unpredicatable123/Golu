@@ -399,7 +399,7 @@
     "aarthi": {
       "label_en": "Show Aarthi",
       "label_ta": "ஆரத்தி",
-      "sprite": "aarthi_plate",
+      "sprite": "aarthi_plate", "flame_anchor": [0.629, 0.461],
       "flame": "ghee",
       "motion": { "circles_clockwise": 3, "circles_anticlockwise": 3, "seconds_per_circle": 1.8, "reversal_ease_fraction": 0.25, "rise_seconds": 0.8, "lower_seconds": 0.9, "ellipse_rx_vw": 0.28, "ellipse_ry_vh": 0.17, "ellipse_rx_vw_portrait": 0.36, "ellipse_ry_vh_portrait": 0.12, "start_angle_deg": 90 },
       "bell": { "strikes_per_circle": 4, "volume": 0.55 },
@@ -408,7 +408,7 @@
     "camphor": {
       "label_en": "Show Camphor",
       "label_ta": "கற்பூர ஆரத்தி",
-      "sprite": "camphor_plate",
+      "sprite": "camphor_plate", "flame_anchor": [0.391, 0.434],
       "flame": "camphor",
       "motion": { "circles_clockwise": 3, "circles_anticlockwise": 3, "seconds_per_circle": 1.8, "reversal_ease_fraction": 0.25, "rise_seconds": 0.8, "lower_seconds": 1.6, "ellipse_rx_vw": 0.28, "ellipse_ry_vh": 0.17, "ellipse_rx_vw_portrait": 0.36, "ellipse_ry_vh_portrait": 0.12, "start_angle_deg": 90 },
       "bell": { "strikes_per_circle": 4, "volume": 0.55 },
@@ -423,7 +423,7 @@
       "blessing_ta": "அம்மன் அருள் உங்களுக்குக் கிடைக்கட்டும்",
       "blessing_en": "May the Goddess bless you",
       "tray_sprite": "tray_banana_leaf",
-      "composite_sprite": "tray_composite",
+      "composite_sprite": "tray_composite", "composite_bowls": [[0.314, 0.405], [0.498, 0.483], [0.713, 0.576]],
       "petal_sprites": ["petal_marigold", "petal_rose", "flower_jasmine"],
       "auto_close_seconds": 6
     }

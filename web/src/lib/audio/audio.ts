@@ -33,6 +33,8 @@ export class AudioManager {
   private howls: Partial<Record<Cue, HowlT>> = {};
   private missing = new Set<Cue>();
   private omId: number | null = null;
+  private omSrc: string[] | null = null;
+  private HowlCtor: typeof HowlT | null = null;
   private omSynth: { stop(): void } | null = null;
   private omSynthGain: GainNode | null = null;
   private ctx: AudioContext | null = null;
@@ -52,6 +54,7 @@ export class AudioManager {
   /** Load the recorded cues; any that fail are synthesised instead. Returns the missing file stems. */
   async load(): Promise<{ missing: string[] }> {
     const { Howl, Howler } = await import('howler');
+    this.HowlCtor = Howl;
     Howler.autoUnlock = true;
     const files: Record<Cue, { file: string; loop?: boolean }> = {
       om: { file: this.cfg.om_loop.file, loop: true },
@@ -69,6 +72,13 @@ export class AudioManager {
               .map((ext) => `/audio/${files[cue].file}.${ext}?v=${frames.version}`);
             if (!src.length) {
               this.missing.add(cue);
+              resolve();
+              return;
+            }
+            if (cue === 'om') {
+              // the Om recording is minutes long: stream it after Enter instead of downloading it up front
+              // (keeps the pre-Enter payload under budget); startOm() creates the streaming Howl
+              this.omSrc = src;
               resolve();
               return;
             }
@@ -135,13 +145,38 @@ export class AudioManager {
   startOm(): void {
     const target = this.cfg.om_loop.volume;
     const fade = this.cfg.om_loop.fade_in_seconds * 1000;
-    const h = this.howls.om;
-    if (h && !this.missing.has('om')) {
+    if (this.omSrc && this.HowlCtor && !this.howls.om) {
+      const h = new this.HowlCtor({
+        src: this.omSrc,
+        format: this.omSrc.map((u) => u.split('?')[0].split('.').pop() as string),
+        html5: true,          // stream: playback starts before the whole file has downloaded
+        loop: true,
+        volume: 0,
+        onloaderror: () => this.omFallback(),
+        onplayerror: () => this.omFallback(),
+      });
+      this.howls.om = h;
       this.omId = h.play();
-      h.volume(0, this.omId);
-      h.fade(0, target, fade, this.omId);
+      h.fade(0, this.ducked ? this.cfg.om_loop.ducked_volume : target, fade, this.omId);
       return;
     }
+    this.startOmSynth();
+  }
+
+  /** The recording failed to stream: fall back to the synthesised drone. */
+  private omFallback(): void {
+    if (this.omSynth) return;
+    console.info('[golu] Om recording unavailable, using synthesis');
+    this.howls.om?.unload();
+    this.howls.om = undefined;
+    this.omId = null;
+    this.missing.add('om');
+    this.startOmSynth();
+  }
+
+  private startOmSynth(): void {
+    const target = this.cfg.om_loop.volume;
+    const fade = this.cfg.om_loop.fade_in_seconds * 1000;
     if (!this.ctx || !this.out) return;
     const g = this.ctx.createGain();
     g.gain.value = 0;

@@ -140,14 +140,16 @@
         alpha = 1 - k;
         if (kind === 'camphor' && !extinguishing) {
           extinguishing = true;
-          flame.extinguish(R.extinguish_seconds ?? 1.4).then(() => smoke.emit(x, y - plateW * 0.18, 3, 3.4));
+          flame.extinguish(R.extinguish_seconds ?? 1.4).then(() =>
+            smoke.emit(x + (R.flame_anchor[0] - 0.5) * plateW, y + (R.flame_anchor[1] - 0.5) * plateW, 3, 3.4));
         }
       }
       px = x;
       py = y;
       plateOpacity = alpha;
-      const wickX = x + plateW * 0.07;
-      const wickY = y - plateW * 0.2;
+      // the sprite is centred on (x, y) and square: map the measured flame anchor into the page
+      const wickX = x + (R.flame_anchor[0] - 0.5) * plateW;
+      const wickY = y + (R.flame_anchor[1] - 0.5) * plateW;
       fctx.clearRect(0, 0, W, H);
       gctx.clearRect(0, 0, W, H);
       flame.setAnchor(wickX, wickY, kind === 'camphor' ? plateW / 230 : plateW / 260);

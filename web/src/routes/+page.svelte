@@ -66,7 +66,7 @@
 
 <a class="skip sr-only" href="#golu-main">{config.ui.navigator_ta} — {config.ui.navigator_en}</a>
 
-{#if cache && audio && !$entered}
+{#if !$entered}
   <Entrance {cache} {audio} onentered={onEntered} />
 {/if}
 <!-- always in the static HTML: the skip link targets it; contents mount in the browser -->
@@ -76,8 +76,11 @@
       <ReducedMotionView />
     {:else}
       <FrameScroller {cache} />
-      <LampFlicker />
-      <DustLayer />
+      {#if $entered}
+        <!-- full-screen animated overlays: only once the golu is visible (no main-thread work behind the doors) -->
+        <LampFlicker />
+        <DustLayer />
+      {/if}
     {/if}
     {#if $entered}
       <StepTitleCard />

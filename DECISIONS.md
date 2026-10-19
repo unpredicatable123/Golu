@@ -182,7 +182,41 @@ Final renders use Cycles with every light casting shadows, so the final images a
 **D57 · Matte painted terrain.** M_ClayGloss gains material kind 5: painted terrain (hill, rocks, trees) with a 0.1 clear-coat instead of 0.6. At full varnish the Govardhana hill read as glossy plastic, while golu terrain pieces are matte, poster-painted clay. The doll kinds are unchanged.
 
 **D58 · "High" render tier and frame blending.** On the user's request for sharper, smoother frames before the final pass, a third quality tier sits between draft and final:
-- **Settings:** EEVEE at 1920×1080 with 32 samples, full-resolution shadows from every light, two shadow rays, and screen-space reflections on the varnish.
+- **Settings:** EEVEE at 1920×1080, 16 samples, full-resolution shadows. Measured about 55 s per frame; 720p saved only about 10%, because the cost is dominated by samples and per-frame scene sync, so the user chose 1080p.
 - **Scene:** it renders the same built scene as draft, so no rebuild is needed.
-- **Why:** on this laptop (4-core CPU, integrated GPU), Cycles final quality would take days. The high tier gets close to full-HD finish in hours.
+- **Why:** on this laptop (4-core CPU, integrated GPU), Cycles final quality would take days. The high tier gets a sharp finish in hours.
 - **Player:** the frame player now blends each frame into the next by the fractional scroll position, and upscales with high-quality smoothing. Scrubbing glides between rendered frames instead of stepping.
+
+**D59 · Half-rate final render with motion interpolation.** The user's submission deadline is the next day, and a full-rate render would not fit, so the 720p render covers only the odd global frames (`--stride 2`, 564 frames).
+- **Interpolation:** `encode_frames.sh --interpolate` rebuilds the even frames with ffmpeg's motion-compensated `minterpolate` over the global sequence, so step boundaries interpolate across the continuous camera move. The doors are handled the same way.
+- **Check:** on draft frames, an interpolated frame scores 29.2 dB PSNR against the true render, versus 24.4 dB for repeating the previous frame. Most of the remaining difference is the renderer's own frame-to-frame noise.
+- **Search range:** the hold dolly moves about 40 px between rendered frames at 1080p, beyond ffmpeg's default 32 px motion search, which produced ghosting. `search_param=96` (EPZS) gives clean midpoints.
+- **Fast moves are rendered at full rate:** between steps the camera rises quickly, and motion interpolation tears at those speeds. So every frame of the step transitions (24 per step), the finale (72) and the door swing (72) is rendered. The encoder copies real renders over interpolated frames, so interpolation fills only the slow holds: 432 of the 1,128 fly-through frames. In total, 696 fly-through frames and all 72 door frames are real renders.
+
+**D60 · Encode quality.** Encoding at WebP q75, about 100 KB per 1080p frame, smoothed away the faces, jewellery and garland detail the high render had added, and the user read the result as low quality. Frames are now encoded with a light unsharp mask (5×5, 0.7) at q85 for desktop (about 150–200 KB per frame) and q78 for mobile. Desktop frames total about 220 MB. They stream one step at a time, so a step costs about 25 MB on desktop.
+
+**D61 · Om recording.** The project owner supplied a 3½-minute Om chant recording (`om-chant.mp3.mpeg`).
+- **Preparation:** trimmed of its 0.3 s lead-in silence, loudness-normalised to −16 LUFS, given 1.5 s fades so the loop point doesn't click, and encoded to Opus (1.9 MB) and MP3 (3.3 MB).
+- **Streaming:** at that size, downloading it up front would break the 3 MB pre-Enter budget. So the Om is not preloaded: it streams (Howler `html5`) when it starts after Enter, during its 3 s fade-in. If streaming fails, it falls back to the synthesised drone.
+- **Other audio:** the bells stay synthesised until recordings are supplied.
+
+**D62 · Smooth scrubbing on this laptop.** The final-frame check in Chrome found two problems.
+- **Fallback blending:** frames were blended with the next frame even when the current one was a stand-in (the nearest decoded frame during a fast scroll). During transitions that showed a doubled, see-through image. Blending now happens only between the two exact neighbours.
+- **Downscaling cost:** every animation frame downscaled two full 1080p bitmaps on the main thread. Frames are now decoded straight to their cover-fit draw size (`createImageBitmap` resize, off the main thread), so drawing is a 1:1 copy.
+- **Result** for a 6 s scripted scroll through three steps: frames over 20 ms fell from 49% to 5%, the 95th percentile from 67 to 32 ms, and stand-in frames from 177 to 0.
+
+**D63 · Ritual alignment from the rendered sprites.**
+- **Flame position:** the plate flame was placed by a guessed offset shared by both plates. It floated above the aarthi lamp and missed the camphor block. Each ritual now has a `flame_anchor` measured on its sprite: the wick tip on the lamp rim at (0.629, 0.461), and the camphor block's top at (0.391, 0.434).
+- **Prasadam tray:** separate bowl sprites in a flat CSS row could not line up with the three-quarter-view banana leaf. The tray now shows `tray_composite`, the whole tray rendered in 3D with the configured trio. Names are listed below in the same order, and steam rises from the bowl centres measured on that sprite (`composite_bowls`). Changing the third dish therefore needs a sprite re-render (`render_props.py --only tray_composite`).
+
+**D64 · Load performance.** Nothing animates behind the entrance any more: the flame-flicker and dust layers mount after Enter, and the frame player draws only after Enter. The entrance title is prerendered, and the woff2 fonts are preloaded from the head.
+- **Desktop:** Lighthouse performance went from 68 to 92 (blocking time from 450 ms to 10 ms).
+- **Mobile:** the simulated slow-4G, 4× CPU preset scores about 64–67, below the planned 85. Its LCP is the Tamil title text, and it is dominated by script and font arrival on that profile; it is recorded as a known limitation.
+
+**D65 · Every frame is a real render; no blending (replaces the interpolation in D59 and the blending in D58).**
+- **Interpolation:** checked at full size, the motion-interpolated hold frames were visibly damaged where dolls overlap (ghosted figures, smeared hands and emblems, warped garlands). The owner saw this as glitches and blur. A whole-frame PSNR audit had missed it, because the damage is local.
+- **Blending:** crossfading neighbouring frames also showed a double image, because the hold dolly moves about 20 px per frame at 1080p.
+- **Shipped:** the owner's deadline left no time to render the 432 remaining even hold frames (about 5½ h). The shipped encode holds each real hold frame for two frames (`--fill-gaps`), so every image shown is a crisp real render. The holds update at an effective 12 fps while scrubbing. Rendering those frames (`render_steps.py --quality high --frames 2,4,…,96`) and re-encoding without `--fill-gaps` is the upgrade path.
+- **Player:** always draws exactly one whole frame.
+
+**D66 · Hotspots on riders.** Riders (Kalki on his horse, Durga on her lion) are lifted onto the saddle after the skeleton is built, but the head centre was taken from the unlifted skeleton. Their hotspot dots, and the face-paint centre, sat about 0.15 of the doll height too low (Kalki's dot was on the saddle). The lift is now added to the head centre, and the manifest's hotspot tracks were regenerated. The shipped frames were rendered before this fix, so Kalki and Durga have no painted eyes in them. The next render picks the fix up; it needs whole steps 2 and 9 re-rendered so the faces stay consistent from frame to frame.

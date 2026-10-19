@@ -11,7 +11,9 @@
   import AgalLoader from './AgalLoader.svelte';
   import BrassButton from './BrassButton.svelte';
 
-  let { cache, audio, onentered }: { cache: FrameCache; audio: AudioManager; onentered: () => void } = $props();
+  // cache/audio arrive after the app initialises; the entrance itself is in the prerendered HTML (fast LCP)
+  let { cache, audio, onentered }: { cache: FrameCache | null; audio: AudioManager | null; onentered: () => void } = $props();
+  let started = false;
 
   let canvas: HTMLCanvasElement;
   let ready = $state(false);
@@ -23,9 +25,10 @@
   let videoUrl: string | null = null;
   let mobile = $state(false);
 
-  const posterUrl = $derived(`/doors/${mobile ? 'mobile' : 'desktop'}/poster.webp?v=${frames.version}`);
+  const posterDesktop = `/doors/desktop/poster.webp?v=${frames.version}`;
+  const posterMobile = `/doors/mobile/poster.webp?v=${frames.version}`;
 
-  async function preload() {
+  async function preload(cache: FrameCache) {
     const width = mobile ? 960 : 1920;
     const sources = [`/doors/doors-${width}.webm`, `/doors/doors-${width}.mp4`];
     const probe = document.createElement('video');
@@ -86,13 +89,13 @@
   async function playDoorsFrames(ctx: CanvasRenderingContext2D): Promise<void> {
     const dir = mobile ? 'mobile' : 'desktop';
     const n = frames.doors.count;
-    const imgs = await Promise.all(
-      Array.from({ length: n }, async (_, i) => {
-        const res = await fetch(`/doors/${dir}/f_${String(i + 1).padStart(4, '0')}.webp?v=${frames.version}`);
-        if (!res.ok) throw new Error(`door frame ${i + 1}: ${res.status}`);
-        return createImageBitmap(await res.blob());
-      })
-    );
+    const load = async (i: number) => {
+      const res = await fetch(`/doors/${dir}/f_${String(i + 1).padStart(4, '0')}.webp?v=${frames.version}`);
+      if (!res.ok) throw new Error(`door frame ${i + 1}: ${res.status}`);
+      return createImageBitmap(await res.blob());
+    };
+    const first = await load(0);           // probe one frame before requesting all of them
+    const imgs = [first, ...(await Promise.all(Array.from({ length: n - 1 }, (_, i) => load(i + 1))))];
     const start = performance.now();
     await new Promise<void>((resolve) => {
       const tick = (now: number) => {
@@ -107,7 +110,7 @@
   }
 
   async function enter() {
-    if (!ready || playing) return;
+    if (!ready || playing || !audio) return;
     playing = true;
     await audio.unlock().catch((e) => console.warn('[golu] audio unlock failed:', e));   // 1. unlock audio (inside the click)
     audio.bellLarge();                    // 2. large temple bell
@@ -140,9 +143,15 @@
     onentered();
   }
 
+  $effect(() => {
+    if (cache && !started) {
+      started = true;
+      preload(cache);
+    }
+  });
+
   onMount(() => {
     mobile = window.innerWidth < 768;
-    preload();
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl);
     };
@@ -150,13 +159,17 @@
 </script>
 
 <svelte:head>
-  <link rel="preload" as="image" href={posterUrl} fetchpriority="high" />
+  <link rel="preload" as="image" href={posterDesktop} media="(min-width: 768px)" fetchpriority="high" />
+  <link rel="preload" as="image" href={posterMobile} media="(max-width: 767px)" fetchpriority="high" />
 </svelte:head>
 
 <section class="entrance" class:leaving aria-label={`${config.meta.title_ta} — ${config.meta.title_en}`}>
   {#if posterOk}
-    <img class="poster" src={posterUrl} alt={`${config.meta.title_ta} — ${config.meta.title_en}`} fetchpriority="high"
-         onerror={() => (posterOk = false)} />
+    <picture>
+      <source media="(max-width: 767px)" srcset={posterMobile} />
+      <img class="poster" src={posterDesktop} alt={`${config.meta.title_ta} — ${config.meta.title_en}`}
+           fetchpriority="high" onerror={() => (posterOk = false)} />
+    </picture>
   {/if}
   <canvas bind:this={canvas} class="doors" class:visible={playing} aria-hidden="true"></canvas>
   <div class="bloom" class:on={bloom} aria-hidden="true"></div>
