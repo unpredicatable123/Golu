@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "cd web && npm ci",
-  "buildCommand": "cd web && npm run build",
-  "outputDirectory": "web/build",
+  "installCommand": "if [ -d web ]; then cd web; fi; npm ci",
+  "buildCommand": "if [ -d web ]; then cd web && npm run build && rm -rf ../build && mv build ../build; else npm run build; fi",
+  "outputDirectory": "build",
   "headers": [
     {
       "source": "/(frames|frames-mobile|doors|props|audio)/(.*)",

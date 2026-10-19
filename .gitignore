@@ -19,3 +19,6 @@ web/playwright-report/
 
 # Local-only files
 om-chant.mp3.mpeg
+
+# Vercel build output when the project root is the repository root (vercel.json moves web/build here)
+/build/
