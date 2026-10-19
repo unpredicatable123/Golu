@@ -2,13 +2,13 @@
   // Bilingual step title + story; fades in at 10% of the step's hold and out at 85% (SPEC §5.2).
   import { config } from '$lib/config';
   import { stepProgress } from '$lib/frames';
-  import { globalFrame } from '$lib/stores';
+  import { globalFrame, ritual } from '$lib/stores';
 
   const RAMP = 0.04;
   const info = $derived(stepProgress($globalFrame));
   const step = $derived(config.steps[info.step - 1]);
   const opacity = $derived.by(() => {
-    if (info.phase !== 'hold') return 0;
+    if (info.phase !== 'hold' || $ritual) return 0;      // the rituals and prasadam tray need the screen
     const p = info.p;
     if (p < 0.1 || p > 0.85) return 0;
     return Math.min(1, (p - 0.1) / RAMP, (0.85 - p) / RAMP);
@@ -72,8 +72,21 @@
   }
   .story-ta { font-family: var(--font-ta); font-size: 0.9rem; }
   .story-en { font-family: var(--font-en); font-style: italic; }
+  @media (min-width: 768px) {
+    .card-wrap { left: max(64px, 4vw); }               /* clear of the step navigator's diyas */
+  }
   @media (max-width: 767px) {
-    .card-wrap { top: 12px; }
-    .story-ta, .story-en { font-size: 0.82rem; }
+    .card-wrap { top: 66px; }                          /* below the audio control */
+    .inner { padding: 0.7rem 0.9rem 0.8rem; }
+    .story-ta, .story-en { font-size: 0.8rem; line-height: 1.42; }
+  }
+  /* short landscape screens (phones on their side): titles only, compact */
+  @media (max-height: 520px) {
+    .card-wrap { top: 10px; width: min(320px, calc(100vw - 32px)); }
+    .inner { padding: 0.5rem 0.8rem 0.55rem; }
+    .eyebrow { font-size: 0.64rem; margin-bottom: 0.1rem; }
+    .title-ta { font-size: 1.02rem; }
+    .title-en { font-size: 0.9rem; margin-bottom: 0; }
+    .story-ta, .story-en { display: none; }
   }
 </style>

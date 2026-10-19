@@ -222,3 +222,12 @@ Final renders use Cycles with every light casting shadows, so the final images a
 **D66 · Hotspots on riders.** Riders (Kalki on his horse, Durga on her lion) are lifted onto the saddle after the skeleton is built, but the head centre was taken from the unlifted skeleton. Their hotspot dots, and the face-paint centre, sat about 0.15 of the doll height too low (Kalki's dot was on the saddle). The lift is now added to the head centre, and the manifest's hotspot tracks were regenerated. The shipped frames were rendered before this fix, so Kalki and Durga have no painted eyes in them. The next render picks the fix up; it needs whole steps 2 and 9 re-rendered so the faces stay consistent from frame to frame.
 
 **D67 · Deploying on Vercel from git (supersedes D46's "frames are not in git").** The owner deploys by connecting the GitHub repository to Vercel, which builds from a clean clone. So the encoded web assets are committed: `web/static/frames*`, `doors`, `props`, `audio` and `web/src/lib/frames.json`, about 330 MB in 2,400 files, each well under GitHub's 100 MB file limit. The raw PNG renders stay git-ignored. A root `vercel.json` installs and builds in `web/` and serves `web/build`, with immutable caching for the frame, door, sprite and audio paths and for `_app/immutable`. Frame URLs carry `?v=<version>`, so a re-encode busts caches.
+
+**D68 · Phone layout.**
+- **Portrait band:** on a tall portrait phone, covering the screen with a 16:9 frame showed only about a quarter of its width, so most dolls on a step were off-screen at any moment, and the 960 px frames were upscaled about 4.5×. Portrait screens now show at least 55% of the frame width (`bandFit`): the frame fills the width as a band centred at 54% of the height, under the title card. Above and below is a darkened, blurred copy of the same frame with feathered edges. Hotspots, lamp flicker and the plate path use the band rectangle.
+- **Phone frames:** phones load the full-HD frame set, which is 1:1 at that band width, unless data saver is on or the network is 2G/3G. The decode window is 8 frames (about 70 MB of bitmaps).
+- **Short landscape screens** (height ≤ 520 px):
+  - The title card shows titles only and is hidden during rituals.
+  - The title card clears the navigator diyas, and on phones it sits below the audio control.
+  - Ritual buttons and info cards are smaller.
+  - The prasadam tray is sized to the screen height.

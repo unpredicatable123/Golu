@@ -126,7 +126,8 @@
     position: absolute;
     left: 50%;
     bottom: max(4vh, 24px);
-    width: min(760px, calc(100vw - 32px));
+    /* fit the height too: tray (16:9 band) + names + Take button must stay on screen on landscape phones */
+    width: min(760px, calc(100vw - 32px), calc((100dvh - 190px) * 1.78));
     transform: translate(-50%, 115%);
     transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.25, 1);
   }
@@ -150,6 +151,12 @@
   .names li { display: flex; flex-direction: column; }
   .names .ta { font-family: var(--font-ta); font-size: clamp(0.78rem, 2vw, 1rem); color: #f6dfa0; font-weight: 600; }
   .names .en { font-family: var(--font-en); font-size: clamp(0.76rem, 1.9vw, 0.95rem); color: var(--tok-sandal); }
+  @media (max-height: 520px) {
+    .tray { bottom: 8px; }
+    .names .ta { font-size: 0.78rem; }
+    .names .en { font-size: 0.74rem; }
+    .actions { margin-top: 0.3rem; }
+  }
   .actions { position: relative; display: flex; justify-content: center; align-items: center; gap: 0.8rem; margin-top: 0.6rem; padding-bottom: 2%; }
   .close {
     width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1px solid var(--tok-brass);

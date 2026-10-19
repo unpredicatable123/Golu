@@ -236,6 +236,7 @@ export class FrameCache {
 
 /** Decode-window size from device memory (Chrome exposes navigator.deviceMemory in GB). */
 export function decodeWindowFor(deviceMemoryGb: number | undefined, mobile: boolean): number {
-  if (deviceMemoryGb !== undefined && deviceMemoryGb <= 4) return mobile ? 8 : 6;
-  return mobile ? 12 : 16;
+  // phones decode full-HD frames for the portrait band (≈8.5 MB each): 8 frames keeps bitmaps under ~70 MB
+  if (deviceMemoryGb !== undefined && deviceMemoryGb <= 4) return 6;
+  return mobile ? 8 : 16;
 }

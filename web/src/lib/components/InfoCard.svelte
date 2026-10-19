@@ -99,4 +99,13 @@
     color: var(--tok-sandal);
     cursor: pointer;
   }
+  /* short landscape screens: a smaller card that leaves the dolls visible */
+  @media (max-height: 520px) {
+    .info { width: min(270px, calc(100vw - 32px)); }
+    .inner { padding: 0.55rem 2.1rem 0.6rem 0.75rem; }
+    h4 .ta { font-size: 0.92rem; }
+    h4 .en { font-size: 0.86rem; }
+    p { font-size: 0.76rem; line-height: 1.4; }
+    p.ta { font-size: 0.74rem; }
+  }
 </style>

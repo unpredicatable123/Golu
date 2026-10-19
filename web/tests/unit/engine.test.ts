@@ -143,8 +143,9 @@ describe('FrameCache', () => {
     cache.dispose();
   });
   it('sizes the decode window from device memory', () => {
-    expect(decodeWindowFor(2, true)).toBe(8);
+    expect(decodeWindowFor(2, true)).toBe(6);
+    expect(decodeWindowFor(8, true)).toBe(8);
     expect(decodeWindowFor(8, false)).toBe(16);
-    expect(decodeWindowFor(undefined, true)).toBe(12);
+    expect(decodeWindowFor(undefined, true)).toBe(8);      // phones decode full-HD band frames (D68)
   });
 });

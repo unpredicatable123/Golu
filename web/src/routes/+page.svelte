@@ -27,8 +27,13 @@
 
   onMount(() => {
     const mobile = window.innerWidth < 768;
-    const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    cache = new FrameCache({ variant: mobile ? 'mobile' : 'desktop', decodeWindow: decodeWindowFor(mem, mobile) });
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean; effectiveType?: string } };
+    const mem = nav.deviceMemory;
+    // phones show 55% of the frame width across ~1000+ device pixels in portrait (D68): the 960 px set would be
+    // upscaled about 2x and look soft, so use the full-HD set unless data saver is on or the network is slow
+    const lowData = !!nav.connection?.saveData || /(^|-)(2g|3g)$/.test(nav.connection?.effectiveType ?? '');
+    const variant = !mobile || (!lowData && window.devicePixelRatio >= 1.5) ? 'desktop' : 'mobile';
+    cache = new FrameCache({ variant, decodeWindow: decodeWindowFor(mem, mobile) });
     audio = new AudioManager(config.audio);
     audio.load();
     const w = window as Window;

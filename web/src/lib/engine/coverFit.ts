@@ -15,6 +15,26 @@ export function coverFit(srcW: number, srcH: number, dstW: number, dstH: number,
   return { sx, sy, sw, sh, dx: 0, dy: 0, dw: dstW, dh: dstH };
 }
 
+/** Portrait screens: never show less than this fraction of the frame's width (D68). */
+export const MIN_VISIBLE_WIDTH = 0.55;
+
+/**
+ * Cover-fit, except where covering would crop away more than 1 − minVisible of the width (tall portrait
+ * screens): then the frame fills the width at minVisible of its width, as a band centred at bandCenter of the
+ * height; the caller fills the space above and below.
+ */
+export function bandFit(srcW: number, srcH: number, dstW: number, dstH: number, focusX = 0.5,
+                        minVisible = MIN_VISIBLE_WIDTH, bandCenter = 0.54): Rect {
+  const cover = coverFit(srcW, srcH, dstW, dstH, focusX);
+  if (cover.sw / srcW >= minVisible - 1e-6) return cover;
+  const sw = srcW * minVisible;
+  const dh = srcH * (dstW / sw);
+  const fx = Math.min(1, Math.max(0, focusX));
+  const sx = Math.min(srcW - sw, Math.max(0, fx * srcW - sw / 2));
+  const dy = Math.max(0, Math.min(dstH - dh, dstH * bandCenter - dh / 2));
+  return { sx, sy: 0, sw, sh: srcH, dx: 0, dy, dw: dstW, dh };
+}
+
 /** Visible width of the frame (fraction 0..1) for a viewport; < 1 means the sides are cropped. */
 export function cropWidthFraction(srcW: number, srcH: number, dstW: number, dstH: number): number {
   return Math.min(1, (dstW / dstH) / (srcW / srcH));

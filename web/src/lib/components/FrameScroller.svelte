@@ -5,7 +5,7 @@
   import { config } from '$lib/config';
   import { frames, stepOfGlobal, stepProgress } from '$lib/frames';
   import { FrameCache, decodeWindowFor } from '$lib/engine/FrameCache';
-  import { coverFit, cropWidthFraction, portraitFocusX } from '$lib/engine/coverFit';
+  import { MIN_VISIBLE_WIDTH, bandFit, cropWidthFraction, portraitFocusX } from '$lib/engine/coverFit';
   import { hotspotsAt } from '$lib/engine/hotspots';
   import { totalScrollPx } from '$lib/engine/scrollMap';
   import { view } from '$lib/engine/view';
@@ -38,10 +38,44 @@
       ctx.imageSmoothingQuality = 'high';
     }
     scrollPx = totalScrollPx(frames.totalFrames, window.innerHeight);
-    cache.setDrawSize(canvas.width, canvas.height);
+    // decode size = what the frame is drawn at (in portrait the band shows MIN_VISIBLE_WIDTH of the frame width)
+    const crop = cropWidthFraction(16, 9, canvas.width, canvas.height);
+    const visible = Math.max(crop, MIN_VISIBLE_WIDTH);
+    cache.setDrawSize(Math.round(canvas.width / Math.min(1, visible)), Math.round((canvas.width / Math.min(1, visible)) * 9 / 16) || canvas.height);
     dirty = true;
     tick().then(() => refreshScroll?.());     // re-measure once the spacer has its new height
   }
+
+  // portrait band: the space above and below is a soft, darkened blur of the same frame (a tiny copy stretched
+  // up is a cheap blur), feathered into the band's edges
+  let blurCanvas: HTMLCanvasElement | null = null;
+  function drawBackdrop(bmp: ImageBitmap, r: { dy: number; dh: number }, W: number, H: number) {
+    if (!ctx) return;
+    blurCanvas ??= Object.assign(document.createElement('canvas'), { width: 32, height: 18 });
+    const b = blurCanvas.getContext('2d') as CanvasRenderingContext2D;
+    b.drawImage(bmp, 0, 0, 32, 18);
+    const cw = (H * 16) / 9;
+    ctx.drawImage(blurCanvas, 0, 0, 32, 18, (W - cw) / 2, 0, cw, H);
+    ctx.fillStyle = 'rgba(20, 8, 4, 0.55)';
+    ctx.fillRect(0, 0, W, H);
+    const f = Math.min(r.dy, H * 0.06);
+    if (f > 1) {
+      const top = ctx.createLinearGradient(0, r.dy, 0, r.dy + f);
+      top.addColorStop(0, 'rgba(20, 8, 4, 0.9)');
+      top.addColorStop(1, 'rgba(20, 8, 4, 0)');
+      const bot = ctx.createLinearGradient(0, r.dy + r.dh - f, 0, r.dy + r.dh);
+      bot.addColorStop(0, 'rgba(20, 8, 4, 0)');
+      bot.addColorStop(1, 'rgba(20, 8, 4, 0.9)');
+      featherTop = top;
+      featherBottom = bot;
+      featherSize = f;
+    } else {
+      featherTop = featherBottom = null;
+    }
+  }
+  let featherTop: CanvasGradient | null = null;
+  let featherBottom: CanvasGradient | null = null;
+  let featherSize = 0;
 
   function draw() {
     raf = requestAnimationFrame(draw);
@@ -61,19 +95,27 @@
     const srcW = bmp.width;
     const srcH = bmp.height;
     let focus = 0.5;
-    const crop = cropWidthFraction(srcW, srcH, W, H);
+    const crop = Math.max(cropWidthFraction(srcW, srcH, W, H), MIN_VISIBLE_WIDTH);
     if (crop < 0.98) {
       const sp = stepProgress(g);
       const xs = hotspotsAt(frames, step, Math.min(local, frames.steps[step - 1].hold[1])).map((h) => h.x);
       focus = portraitFocusX(xs, crop, sp.phase === 'hold' ? sp.p : sp.phase === 'finale' ? 0.5 : 1);
     }
-    const r = coverFit(srcW, srcH, W, H, focus);
-    ctx.drawImage(bmp, r.sx, r.sy, r.sw, r.sh, 0, 0, W, H);
+    const r = bandFit(srcW, srcH, W, H, focus);
+    if (r.dh < H - 1) drawBackdrop(bmp, r, W, H);
+    ctx.drawImage(bmp, r.sx, r.sy, r.sw, r.sh, r.dx, r.dy, r.dw, r.dh);
+    if (r.dh < H - 1 && featherTop && featherBottom) {
+      ctx.fillStyle = featherTop;
+      ctx.fillRect(0, r.dy, W, featherSize);
+      ctx.fillStyle = featherBottom;
+      ctx.fillRect(0, r.dy + r.dh - featherSize, W, featherSize);
+    }
     lastDrawn = g;
     lastBitmap = bmp;
     dirty = false;
     const css = 1 / Math.min(window.devicePixelRatio || 1, 2);
-    view.set({ rect: { ...r, dw: W * css, dh: H * css }, srcW, srcH, width: W * css, height: H * css, step, local });
+    view.set({ rect: { ...r, dx: r.dx * css, dy: r.dy * css, dw: r.dw * css, dh: r.dh * css }, srcW, srcH,
+               width: W * css, height: H * css, step, local });
     globalFrame.set(g);
     activeStep.set(step);
   }

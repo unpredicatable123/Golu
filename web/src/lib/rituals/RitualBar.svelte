@@ -29,6 +29,10 @@
     gap: 0.7rem;
     z-index: 7;
   }
+  /* short landscape screens: a smaller stack so the dolls stay visible */
+  @media (max-height: 520px) and (min-width: 768px) {
+    .bar { gap: 0.3rem; transform: translateY(-50%) scale(0.8); transform-origin: right center; }
+  }
   @media (max-width: 767px) {
     .bar {
       top: auto;
