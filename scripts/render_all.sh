@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Render orchestration (SPEC §4.8).
-#   scripts/render_all.sh --quality draft|final [--steps 1-9] [--doors] [--props] [--qa] [--all]
+#   scripts/render_all.sh --quality draft|high|final [--steps 1-9] [--doors] [--props] [--qa] [--all]
 #                         [--yes] [--stride N] [--blender PATH]
-# Draft: 960x540 EEVEE. Final: 1920x1080 Cycles 96 spp + OIDN. Resumable: finished frames are skipped.
-# A final render first measures probe frames, prints the total estimate and waits for confirmation.
+# Draft: 960x540 EEVEE. High: 1920x1080 EEVEE 16 spl (D58; use --stride 2 + encode --interpolate, D59).
+# Final: 1920x1080 Cycles 96 spp + OIDN. Resumable: finished frames are skipped.
+# High and final renders first measure probe frames, print the total estimate and wait for confirmation.
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
@@ -38,8 +39,8 @@ parse_args() {
       *) echo "unknown option: $1" >&2; usage 1 ;;
     esac
   done
-  [[ "$QUALITY" == "draft" || "$QUALITY" == "final" ]] || { echo "--quality draft|final is required" >&2; usage 1; }
-  if [[ "$QUALITY" == "final" && "$STRIDE" != "1" ]]; then die "--stride is a draft-only preview aid"; fi
+  [[ "$QUALITY" =~ ^(draft|high|final)$ ]] || { echo "--quality draft|high|final is required" >&2; usage 1; }
+  if [[ "$QUALITY" == "final" && "$STRIDE" != "1" ]]; then die "--stride is for draft previews and the high tier (D59)"; fi
 }
 
 count_steps_frames() {
@@ -56,20 +57,20 @@ count_steps_frames() {
 }
 
 estimate_and_confirm() {
-  log "measuring probe frames at final quality…"
+  log "measuring probe frames at $QUALITY quality…"
   local spf
-  spf="$(run_blender blender/render_steps.py --quality final --probe | grep -oE 'seconds_per_frame=[0-9.]+' | cut -d= -f2)"
+  spf="$(run_blender blender/render_steps.py --quality "$QUALITY" --probe | grep -oE 'seconds_per_frame=[0-9.]+' | cut -d= -f2)"
   [[ -n "$spf" ]] || die "probe failed"
   local frames extra total_s
-  frames="$(count_steps_frames)"
+  frames=$(( $(count_steps_frames) / STRIDE ))
   extra=0
-  (( DO_DOORS )) && extra=$(( extra + 72 ))
+  (( DO_DOORS )) && extra=$(( extra + 72 / STRIDE ))
   total_s="$(node -e "const s=$spf,f=$frames,d=$extra; const t=(f*s + d*s*1.4 + (${DO_PROPS}?12*s*1.2:0))*1.10; console.log(Math.round(t))")"
   local h=$(( total_s / 3600 )) m=$(( (total_s % 3600) / 60 ))
   echo
   echo "================ FINAL RENDER ESTIMATE ================"
-  echo "  measured: ${spf} s/frame (Cycles 96 spp + OIDN, 1920x1080)"
-  echo "  fly-through frames: ${frames}   door frames: $(( DO_DOORS * 72 ))   sprites: $(( DO_PROPS * 12 ))"
+  echo "  measured: ${spf} s/frame ($QUALITY, 1920x1080)"
+  echo "  fly-through frames: ${frames}   door frames: ${extra}   sprites: $(( DO_PROPS * 12 ))"
   echo "  estimated total: ${h} h ${m} min (+10% load/IO)"
   echo "======================================================="
   if (( ! YES )); then
@@ -84,8 +85,9 @@ main() {
   local stride_args=()
   [[ "$STRIDE" != "1" ]] && stride_args=(--stride "$STRIDE")
   log "building scene ($QUALITY)…"
-  run_blender blender/build_scene.py --quality "$QUALITY" --verify
-  if [[ "$QUALITY" == "final" ]]; then estimate_and_confirm; fi
+  local scene_q="$QUALITY"; [[ "$QUALITY" == "high" ]] && scene_q="draft"     # high renders the draft scene
+  run_blender blender/build_scene.py --quality "$scene_q" --verify
+  if [[ "$QUALITY" != "draft" ]]; then estimate_and_confirm; fi
   if (( DO_QA )); then
     log "QA turntables…"
     run_blender blender/render_qa.py --quality "$QUALITY" --sweep
@@ -96,7 +98,7 @@ main() {
   fi
   if (( DO_DOORS )); then
     log "rendering doors…"
-    run_blender blender/render_doors.py --quality "$QUALITY"
+    run_blender blender/render_doors.py --quality "$QUALITY" "${stride_args[@]}"
   fi
   if (( DO_PROPS )); then
     log "rendering prop sprites…"

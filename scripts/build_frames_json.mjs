@@ -80,9 +80,10 @@ function main() {
     counts[s.id] = { desktop: countFrames(d), mobile: countFrames(m) };
     bytes[s.id] = { desktop: stepBytes(d), mobile: stepBytes(m) };
   }
-  const version = createHash('sha1').update(raw).digest('hex').slice(0, 10);
   // audio files actually present, so the app requests only those and synthesises the rest (no 404s)
   const audio = listAudio(join(args.static, 'audio'));
+  // the version busts caches whenever the scene *or* the encoded frames change (re-encode at a new quality)
+  const version = createHash('sha1').update(raw).update(JSON.stringify(bytes)).update(JSON.stringify(audio)).digest('hex').slice(0, 10);
   const json = buildFramesJson(manifest, counts, bytes, version, audio);
   mkdirSync(dirname(args.out), { recursive: true });
   writeFileSync(args.out, JSON.stringify(json));
